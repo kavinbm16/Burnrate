@@ -83,7 +83,8 @@
   // ── Projections ───────────────────────────────────────────────────────────
   let projectionSessionId = $state<string | null>(null)
   let hoursPerDay = $state(8)
-  let robots = $state(100)
+  let robotsInput = $state('100')
+  const robots = $derived(Math.max(1, parseInt(robotsInput, 10) || 1))
   let projection = $state<Projection | null>(null)
 
   $effect(() => {
@@ -242,7 +243,7 @@
         </div>
         <div class="grid gap-2">
           <Label for="robots-input">Robots in fleet</Label>
-          <Input id="robots-input" type="number" min="1" bind:value={robots} class="w-32" />
+          <Input id="robots-input" type="number" min="1" bind:value={robotsInput} class="w-32" />
         </div>
       </div>
 

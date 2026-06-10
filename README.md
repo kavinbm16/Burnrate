@@ -158,7 +158,14 @@ cd ..
 ### Run
 
 ```bash
-uvicorn backend.main:app --reload --port 8000
+# Use --loop asyncio if you see DNS errors (nodename nor servname) connecting to Gemini
+uvicorn backend.main:app --reload --port 8000 --loop asyncio
+```
+
+Preflight check:
+
+```bash
+curl http://localhost:8000/api/health/gemini | python -m json.tool
 ```
 
 Open [http://localhost:8000](http://localhost:8000) for the dashboard.

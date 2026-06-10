@@ -1,7 +1,14 @@
 // Typed client for the Burnrate REST API.
 
+export interface GeminiHealth {
+  status: 'ok' | 'error'
+  message?: string
+  model: string
+}
+
 export interface AppConfig {
   model: string
+  api_key_configured?: boolean
   pricing: {
     audio_input_per_min: number
     audio_output_per_min: number
@@ -88,6 +95,7 @@ async function get<T>(path: string): Promise<T> {
 
 export const api = {
   config: () => get<AppConfig>('/api/config'),
+  geminiHealth: () => get<GeminiHealth>('/api/health/gemini'),
   scenarios: () => get<Scenario[]>('/api/scenarios'),
   sessions: () => get<Session[]>('/api/sessions'),
   turns: (sessionId: string) => get<Turn[]>(`/api/sessions/${sessionId}/turns`),
@@ -112,7 +120,16 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     })
-    if (!res.ok) throw new Error(`Sim start failed: ${res.status}: ${await res.text()}`)
+    if (!res.ok) {
+      let detail = await res.text()
+      try {
+        const j = JSON.parse(detail)
+        detail = j.detail ?? detail
+      } catch {
+        /* plain text */
+      }
+      throw new Error(detail)
+    }
     return res.json()
   },
 

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onMount } from 'svelte'
   import { toast } from 'svelte-sonner'
   import { Button } from '$lib/components/ui/button'
   import * as Card from '$lib/components/ui/card'
@@ -34,6 +35,16 @@
   let headroomEnabled = $state(false)
   let runs = $state<TrackedRun[]>([])
   let matrixRunning = $state(false)
+  let geminiHealthMsg = $state<string | null>(null)
+
+  onMount(async () => {
+    try {
+      const h = await api.geminiHealth()
+      geminiHealthMsg = h.status === 'error' ? (h.message ?? 'Gemini unreachable') : null
+    } catch {
+      geminiHealthMsg = 'Backend unreachable — is uvicorn running on :8000?'
+    }
+  })
 
   const selectedScenario = $derived(app.scenarios.find((s) => s.path === scenarioPath) ?? null)
 
@@ -127,6 +138,15 @@
 </script>
 
 <div class="mx-auto flex max-w-4xl flex-col gap-6">
+  {#if geminiHealthMsg}
+    <Card.Root class="border-destructive/40 bg-destructive/5">
+      <Card.Content class="py-4 text-sm">
+        <p class="font-medium text-destructive">Gemini Live not reachable</p>
+        <p class="mt-1 text-muted-foreground">{geminiHealthMsg}</p>
+      </Card.Content>
+    </Card.Root>
+  {/if}
+
   <!-- Config card -->
   <Card.Root>
     <Card.Header>

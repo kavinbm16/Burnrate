@@ -1,4 +1,5 @@
 # backend/gemini_wrapper.py
+import asyncio
 import time
 from dataclasses import dataclass, field
 from typing import AsyncIterator, Callable
@@ -8,6 +9,7 @@ from google.genai import types as gtypes
 
 from backend.config import AppConfig
 from backend.cost_calculator import calculate_turn_cost
+from backend.gemini_errors import check_dns, format_gemini_connect_error
 from backend.metrics_store import MetricsStore, TurnRecord
 
 
@@ -43,7 +45,25 @@ class GeminiWrapper:
     def __init__(self, config: AppConfig, store: MetricsStore):
         self._config = config
         self._store = store
+        if not config.gemini.api_key:
+            raise ValueError("GEMINI_API is not set — add it to .env")
         self._client = genai.Client(api_key=config.gemini.api_key)
+
+    async def check_live_connectivity(self, timeout: float = 20.0) -> None:
+        """Verify DNS + Gemini Live WebSocket before starting a sim or live session."""
+        check_dns()
+        probe = GeminiSession(
+            session_id="probe",
+            tools_enabled=False,
+            headroom_enabled=False,
+        )
+        cfg = await self.create_live_connect_config_for_sim(probe)
+        try:
+            async with asyncio.timeout(timeout):
+                async with self._client.aio.live.connect(model=self.model, config=cfg):
+                    pass
+        except Exception as e:
+            raise RuntimeError(format_gemini_connect_error(e)) from e
 
     def _build_live_config(self, session: GeminiSession, response_modality: str) -> gtypes.LiveConnectConfig:
         tools = []

@@ -15,19 +15,31 @@ export interface LiveClientHandlers {
   onStarted?: (sessionId: string) => void
   onMetrics?: (m: LiveMetrics) => void
   onAudio?: (pcm: ArrayBuffer) => void
+  onError?: (message: string) => void
   onClose?: () => void
-  onError?: (e: Event) => void
 }
 
 export class LiveClient {
   private ws: WebSocket | null = null
 
-  connect(opts: { tools_enabled: boolean; headroom_enabled: boolean }, handlers: LiveClientHandlers) {
+  connect(
+    opts: { tools_enabled: boolean; headroom_enabled: boolean },
+    handlers: LiveClientHandlers,
+  ): Promise<void> {
     const protocol = location.protocol === 'https:' ? 'wss' : 'ws'
     this.ws = new WebSocket(`${protocol}://${location.host}/ws/live`)
     this.ws.binaryType = 'arraybuffer'
 
-    this.ws.onopen = () => this.ws?.send(JSON.stringify(opts))
+    return new Promise((resolve, reject) => {
+      this.ws!.onopen = () => {
+        this.ws?.send(JSON.stringify(opts))
+        resolve()
+      }
+      this.ws!.onerror = () => {
+        handlers.onError?.('WebSocket connection error')
+        reject(new Error('WebSocket connection error'))
+      }
+
     this.ws.onmessage = (ev) => {
       if (ev.data instanceof ArrayBuffer) {
         handlers.onAudio?.(ev.data)
@@ -37,12 +49,13 @@ export class LiveClient {
         const msg = JSON.parse(ev.data)
         if (msg.type === 'session_started') handlers.onStarted?.(msg.session_id)
         else if (msg.type === 'metrics') handlers.onMetrics?.(msg as LiveMetrics)
+        else if (msg.type === 'error') handlers.onError?.(msg.message ?? 'Unknown error')
       } catch {
         // ignore malformed frames
       }
     }
     this.ws.onclose = () => handlers.onClose?.()
-    this.ws.onerror = (e) => handlers.onError?.(e)
+    })
   }
 
   sendAudio(chunk: ArrayBuffer) {

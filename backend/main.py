@@ -13,6 +13,7 @@ from google.genai import types as gtypes
 
 from backend.config import load_config
 from backend.cost_calculator import calculate_turn_cost, extrapolate_cost
+from backend.gemini_errors import format_gemini_connect_error
 from backend.gemini_wrapper import GeminiWrapper, GeminiSession
 from backend.mcp_loader import MCPLoader
 from backend.metrics_store import MetricsStore, TurnRecord
@@ -47,10 +48,21 @@ app = FastAPI(lifespan=lifespan)
 
 
 # ── REST: Config ────────────────────────────────────────────────────────────
+@app.get("/api/health/gemini")
+async def gemini_health():
+    """Preflight: DNS + Live API WebSocket. Returns ok or a actionable error."""
+    try:
+        await wrapper.check_live_connectivity()
+        return {"status": "ok", "model": config.gemini.model}
+    except Exception as e:
+        return {"status": "error", "message": str(e), "model": config.gemini.model}
+
+
 @app.get("/api/config")
 async def get_config():
     return {
         "model": config.gemini.model,
+        "api_key_configured": bool(config.gemini.api_key),
         "pricing": {
             "audio_input_per_min": config.pricing.audio_input_per_min,
             "audio_output_per_min": config.pricing.audio_output_per_min,
@@ -148,6 +160,11 @@ async def start_sim(body: dict):
     if not Path(scenario_path).is_file():
         raise HTTPException(status_code=400, detail=f"Scenario not found: {scenario_path}")
 
+    try:
+        await wrapper.check_live_connectivity()
+    except Exception as e:
+        raise HTTPException(status_code=503, detail=str(e))
+
     tool_defs = []
     if tools_enabled:
         tool_defs = await mcp_loader.load_tool_definitions()
@@ -173,7 +190,7 @@ async def start_sim(body: dict):
             _sim_runs[run_id]["total_cost_usd"] = result.total_cost_usd
         except Exception as e:
             _sim_runs[run_id]["status"] = "error"
-            _sim_runs[run_id]["error"] = str(e)
+            _sim_runs[run_id]["error"] = format_gemini_connect_error(e)
 
     asyncio.create_task(_run())
     return {"run_id": run_id}
@@ -225,7 +242,6 @@ async def live_audio(websocket: WebSocket):
     )
 
     live_config = await wrapper.create_live_connect_config_for_audio(gemini_session)
-    await websocket.send_json({"type": "session_started", "session_id": session_id})
 
     # Mutable counters shared between the sender loop and the receive task.
     state = {
@@ -281,6 +297,8 @@ async def live_audio(websocket: WebSocket):
     receive_task = None
     try:
         async with wrapper.client.aio.live.connect(model=wrapper.model, config=live_config) as live_session:
+            await websocket.send_json({"type": "session_started", "session_id": session_id})
+
             async def receive_from_gemini():
                 async for msg in live_session.receive():
                     if msg.server_content and msg.server_content.model_turn:
@@ -306,6 +324,14 @@ async def live_audio(websocket: WebSocket):
 
     except WebSocketDisconnect:
         pass
+    except (OSError, Exception) as e:
+        try:
+            await websocket.send_json({
+                "type": "error",
+                "message": format_gemini_connect_error(e),
+            })
+        except Exception:
+            pass
     finally:
         if receive_task:
             receive_task.cancel()

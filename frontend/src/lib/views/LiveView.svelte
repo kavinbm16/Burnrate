@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onDestroy } from 'svelte'
+  import { onDestroy, onMount } from 'svelte'
   import { toast } from 'svelte-sonner'
   import * as Card from '$lib/components/ui/card'
   import * as Chart from '$lib/components/ui/chart'
@@ -9,7 +9,7 @@
   import { Badge } from '$lib/components/ui/badge'
   import { AreaChart } from 'layerchart'
   import { LiveClient, type LiveMetrics } from '$lib/ws'
-  import { MicCapture } from '$lib/audio/capture'
+  import { MicCapture, queryMicPermission, type MicPermission } from '$lib/audio/capture'
   import { PcmPlayer } from '$lib/audio/playback'
   import { app } from '$lib/state.svelte'
   import { usd, duration } from '$lib/format'
@@ -33,6 +33,11 @@
   let mic: MicCapture | null = null
   let player: PcmPlayer | null = null
   let ticker: ReturnType<typeof setInterval> | null = null
+  let micPermission = $state<MicPermission>('unknown')
+
+  onMount(async () => {
+    micPermission = await queryMicPermission()
+  })
 
   const costPerMin = $derived(elapsed > 10 ? totalCost / (elapsed / 60) : 0)
   const sparkline = $derived.by(() => {
@@ -61,12 +66,16 @@
     client = new LiveClient()
 
     try {
-      client.connect(
+      // Request mic first while we're still in the button-click user gesture.
+      await mic.start((chunk) => client?.sendAudio(chunk))
+      micPermission = 'granted'
+
+      await client.connect(
         { tools_enabled: toolsEnabled, headroom_enabled: headroomEnabled },
         {
           onStarted: (id) => {
             sessionId = id
-            toast.success('Live session started')
+            toast.success('Live session started — speak into the mic')
           },
           onMetrics: (m) => {
             totalCost = m.total_cost_usd
@@ -74,20 +83,23 @@
             if (feed.length > 200) feed.pop()
           },
           onAudio: (pcm) => player?.play(pcm),
+          onError: (message) => {
+            toast.error(message, { duration: 12_000 })
+            if (running) stop(false)
+          },
           onClose: () => {
             if (running) stop(false)
           },
-          onError: () => toast.error('WebSocket error — is the backend running?'),
         },
       )
-
-      await mic.start((chunk) => client?.sendAudio(chunk))
 
       running = true
       startedAt = Date.now()
       ticker = setInterval(() => (elapsed = (Date.now() - startedAt) / 1000), 500)
     } catch (e) {
-      toast.error(`Could not start: ${e instanceof Error ? e.message : e}`)
+      const message = e instanceof Error ? e.message : String(e)
+      toast.error(message, { duration: 12_000 })
+      if (message.toLowerCase().includes('microphone')) micPermission = 'denied'
       cleanup()
     }
   }
@@ -122,6 +134,20 @@
 </script>
 
 <div class="mx-auto flex max-w-4xl flex-col gap-6">
+  {#if micPermission === 'denied'}
+    <Card.Root class="border-amber-500/40 bg-amber-500/5">
+      <Card.Content class="py-4 text-sm">
+        <p class="font-medium text-amber-200">Microphone blocked</p>
+        <p class="mt-1 text-muted-foreground">
+          Allow microphone access for this site: click the <strong>lock icon</strong> in the address
+          bar → Site settings → Microphone → Allow. On macOS also enable your browser under
+          <strong>System Settings → Privacy & Security → Microphone</strong>, then reload and try
+          again.
+        </p>
+      </Card.Content>
+    </Card.Root>
+  {/if}
+
   <!-- Controls -->
   <Card.Root>
     <Card.Content class="flex flex-wrap items-center justify-between gap-4">
