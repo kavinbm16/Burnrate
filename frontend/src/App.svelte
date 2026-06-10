@@ -42,20 +42,20 @@
 
 <div class="flex h-screen overflow-hidden bg-background text-foreground">
   <!-- Sidebar -->
-  <aside class="flex w-56 shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground relative overflow-hidden">
-    <!-- Subtle sidebar top glow -->
-    <div class="absolute top-0 left-0 right-0 h-32 pointer-events-none"
-      style="background: radial-gradient(ellipse at 50% 0%, color-mix(in srgb, var(--primary) 12%, transparent), transparent 70%);">
+  <aside class="telemetry-grid flex w-56 shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground relative overflow-hidden">
+    <div class="absolute inset-x-0 top-0 h-40 pointer-events-none"
+      style="background: radial-gradient(ellipse at 50% 0%, color-mix(in srgb, var(--primary) 16%, transparent), transparent 70%);">
     </div>
+    <div class="absolute inset-y-0 right-0 w-px bg-gradient-to-b from-transparent via-primary/35 to-transparent"></div>
 
     <!-- Brand -->
     <div class="flex items-center gap-3 px-4 py-4 relative z-10">
-      <div class="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-[0_0_18px_var(--primary)]">
+      <div class="flex size-9 shrink-0 items-center justify-center rounded-lg border border-primary/35 bg-primary/15 text-primary shadow-[0_0_22px_color-mix(in_srgb,var(--primary)_28%,transparent)]">
         <FlameIcon class="size-4.5" />
       </div>
       <div>
         <div class="text-sm font-extrabold tracking-widest text-foreground">BURNRATE</div>
-        <div class="text-[10px] text-muted-foreground font-medium">Gemini Live cost lab</div>
+        <div class="font-mono text-[10px] text-muted-foreground">CONTROL ROOM</div>
       </div>
     </div>
 
@@ -66,10 +66,10 @@
     <nav class="flex flex-1 flex-col gap-0.5 p-2 relative z-10">
       {#each navItems as item (item.id)}
         <button
-          class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm transition-all duration-200 group relative
+          class="flex items-center gap-3 rounded-md border px-3 py-2.5 text-left text-sm transition-all duration-200 group relative
             {app.tab === item.id
-              ? 'bg-primary/10 text-primary font-semibold shadow-[inset_0_0_0_1px_color-mix(in_srgb,var(--primary)_20%,transparent)]'
-              : 'text-muted-foreground hover:bg-sidebar-accent/60 hover:text-foreground'}"
+              ? 'border-primary/35 bg-primary/10 text-primary font-semibold shadow-[inset_0_0_16px_color-mix(in_srgb,var(--primary)_7%,transparent)]'
+              : 'border-transparent text-muted-foreground hover:border-border/70 hover:bg-sidebar-accent/60 hover:text-foreground'}"
           onclick={() => (app.tab = item.id)}
         >
           {#if app.tab === item.id}
@@ -88,7 +88,7 @@
     <!-- Session summary mini-stats -->
     {#if app.sessions.length > 0}
       <div class="px-4 py-3 relative z-10">
-        <div class="rounded-xl border border-border/40 bg-card/30 p-3 flex flex-col gap-2">
+        <div class="console-panel p-3 flex flex-col gap-2">
           <div class="flex items-center justify-between text-[11px]">
             <span class="text-muted-foreground flex items-center gap-1.5">
               <ActivityIcon class="size-3" />
@@ -134,9 +134,10 @@
   <!-- Main -->
   <div class="flex min-w-0 flex-1 flex-col overflow-hidden">
     <!-- Header -->
-    <header class="flex shrink-0 items-center justify-between border-b border-border/50 px-6 py-3.5 bg-background/60 backdrop-blur-sm">
+    <header class="flex shrink-0 items-center justify-between border-b border-border/60 px-6 py-3.5 bg-background/82 backdrop-blur-sm">
       <div>
-        <h1 class="text-base font-bold text-foreground">{titles[app.tab].title}</h1>
+        <div class="data-label">Mission Surface</div>
+        <h1 class="mt-0.5 text-base font-bold text-foreground">{titles[app.tab].title}</h1>
         <p class="text-[11px] text-muted-foreground mt-0.5">{titles[app.tab].sub}</p>
       </div>
       {#if app.config}

@@ -43,6 +43,8 @@ class SimRunner:
         scenario = self.load_scenario(config.scenario_path)
         turns = scenario["turns"] * scenario.get("repeat", 1)
         avg_dur = scenario.get("avg_turn_duration_sec", 25)
+        avg_audio_in = scenario.get("avg_audio_input_sec", avg_dur / 2)
+        avg_audio_out = scenario.get("avg_audio_output_sec", avg_dur / 2)
 
         session_id = await self._store.create_session(
             mode="sim",
@@ -74,7 +76,11 @@ class SimRunner:
                     if on_metrics:
                         on_metrics(m)
 
-                await self._wrapper.run_sim_turn(gemini_session, turn_text, live_session, capture)
+                await self._wrapper.run_sim_turn(
+                    gemini_session, turn_text, live_session, capture,
+                    audio_input_sec=avg_audio_in,
+                    audio_output_sec=avg_audio_out,
+                )
 
                 if metrics_list:
                     total_cost += metrics_list[-1].cost_usd

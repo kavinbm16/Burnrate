@@ -10,43 +10,119 @@
   let t = 0
 
   const stateConfig = {
-    idle:      { amplitude: 4,  speed: 0.004, alpha: 0.35, rings: 2 },
-    listening: { amplitude: 14, speed: 0.012, alpha: 0.65, rings: 3 },
-    speaking:  { amplitude: 28, speed: 0.022, alpha: 0.90, rings: 4 },
-    muted:     { amplitude: 3,  speed: 0.002, alpha: 0.20, rings: 2 },
+    idle: { amplitude: 6, speed: 0.006, alpha: 0.48, pulse: 0.25 },
+    listening: { amplitude: 16, speed: 0.014, alpha: 0.78, pulse: 0.6 },
+    speaking: { amplitude: 24, speed: 0.022, alpha: 0.95, pulse: 1 },
+    muted: { amplitude: 3, speed: 0.003, alpha: 0.24, pulse: 0.1 },
   }
 
   const COLORS = [
-    [255, 140, 0],   // amber-orange
-    [255, 195, 40],  // warm amber
-    [255, 80, 20],   // deep orange-red
-    [255, 220, 100], // yellow-gold
+    [255, 55, 18],   // hot orange
+    [255, 0, 210],   // magenta
+    [88, 55, 255],   // electric indigo
+    [0, 190, 255],   // cyan
+    [255, 178, 18],  // amber
   ]
 
-  function lerp(a: number, b: number, t: number) { return a + (b - a) * t }
+  function color([r, g, b]: number[], alpha: number) {
+    return `rgba(${r},${g},${b},${alpha})`
+  }
 
-  function drawRing(ctx: CanvasRenderingContext2D, cx: number, cy: number, r: number, amp: number, phase: number, colorA: number[], colorB: number[], alpha: number) {
-    const steps = 120
-    const grad = ctx.createLinearGradient(cx - r, cy - r, cx + r, cy + r)
-    grad.addColorStop(0,   `rgba(${colorA.join(',')},${alpha})`)
-    grad.addColorStop(0.5, `rgba(${colorB.join(',')},${alpha * 0.6})`)
-    grad.addColorStop(1,   `rgba(${colorA.join(',')},${alpha * 0.3})`)
+  function ringPoint(cx: number, cy: number, baseR: number, amp: number, angle: number, phase: number, offset: number) {
+    const wave =
+      Math.sin(angle * 3 + phase + offset) * amp +
+      Math.sin(angle * 7 - phase * 0.74 + offset * 1.7) * amp * 0.34 +
+      Math.sin(angle * 11 + phase * 1.18 - offset) * amp * 0.18
+    const r = baseR + wave
+    return {
+      x: cx + r * Math.cos(angle),
+      y: cy + r * Math.sin(angle),
+    }
+  }
 
+  function traceRing(ctx: CanvasRenderingContext2D, cx: number, cy: number, baseR: number, amp: number, phase: number, offset: number) {
+    const steps = 180
     ctx.beginPath()
     for (let i = 0; i <= steps; i++) {
       const angle = (i / steps) * Math.PI * 2
-      const noise =
-        Math.sin(angle * 3 + phase) * amp +
-        Math.sin(angle * 7 - phase * 1.3) * amp * 0.5 +
-        Math.sin(angle * 13 + phase * 0.7) * amp * 0.25
-      const rx = cx + (r + noise) * Math.cos(angle)
-      const ry = cy + (r + noise) * Math.sin(angle)
-      i === 0 ? ctx.moveTo(rx, ry) : ctx.lineTo(rx, ry)
+      const { x, y } = ringPoint(cx, cy, baseR, amp, angle, phase, offset)
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y)
     }
     ctx.closePath()
-    ctx.strokeStyle = grad
-    ctx.lineWidth = 2.5
-    ctx.stroke()
+  }
+
+  function drawDottedField(ctx: CanvasRenderingContext2D, w: number, h: number) {
+    ctx.save()
+    ctx.fillStyle = 'rgba(255,255,255,0.045)'
+    const spacing = 6
+    for (let y = 3; y < h; y += spacing) {
+      for (let x = 3; x < w; x += spacing) {
+        ctx.fillRect(x, y, 1, 1)
+      }
+    }
+    ctx.restore()
+  }
+
+  function drawBloom(ctx: CanvasRenderingContext2D, cx: number, cy: number, baseR: number, amp: number, phase: number, alpha: number) {
+    ctx.save()
+    ctx.globalCompositeOperation = 'lighter'
+    COLORS.forEach((c, i) => {
+      const angle = phase * (0.8 + i * 0.08) + i * ((Math.PI * 2) / COLORS.length)
+      const p = ringPoint(cx, cy, baseR, amp * 1.25, angle, phase, i)
+      const g = ctx.createRadialGradient(p.x, p.y, 1, p.x, p.y, baseR * 0.42)
+      g.addColorStop(0, color(c, alpha * 0.28))
+      g.addColorStop(0.45, color(c, alpha * 0.12))
+      g.addColorStop(1, color(c, 0))
+      ctx.fillStyle = g
+      ctx.beginPath()
+      ctx.arc(p.x, p.y, baseR * 0.44, 0, Math.PI * 2)
+      ctx.fill()
+    })
+    ctx.restore()
+  }
+
+  function drawAuraBands(ctx: CanvasRenderingContext2D, cx: number, cy: number, baseR: number, amp: number, phase: number, alpha: number) {
+    ctx.save()
+    ctx.globalCompositeOperation = 'lighter'
+    ctx.lineCap = 'round'
+    ctx.lineJoin = 'round'
+
+    for (let i = 0; i < COLORS.length; i++) {
+      traceRing(ctx, cx, cy, baseR + (i - 2) * 3.4, amp * (1 - i * 0.035), phase + i * 0.82, i * 1.13)
+      ctx.strokeStyle = color(COLORS[i], alpha * 0.24)
+      ctx.lineWidth = 18
+      ctx.filter = 'blur(9px)'
+      ctx.stroke()
+    }
+
+    ctx.filter = 'blur(3px)'
+    for (let i = 0; i < COLORS.length; i++) {
+      traceRing(ctx, cx, cy, baseR + (i - 2) * 2.4, amp * (1 - i * 0.04), phase + i * 0.82, i * 1.13)
+      ctx.strokeStyle = color(COLORS[i], alpha * 0.62)
+      ctx.lineWidth = 8
+      ctx.stroke()
+    }
+
+    ctx.filter = 'none'
+    for (let i = 0; i < COLORS.length; i++) {
+      traceRing(ctx, cx, cy, baseR + (i - 2) * 1.4, amp * (1 - i * 0.04), phase + i * 0.82, i * 1.13)
+      ctx.strokeStyle = color(COLORS[i], alpha * 0.88)
+      ctx.lineWidth = 2.4
+      ctx.stroke()
+    }
+
+    ctx.restore()
+  }
+
+  function drawCoreCutout(ctx: CanvasRenderingContext2D, cx: number, cy: number, baseR: number) {
+    const g = ctx.createRadialGradient(cx, cy, baseR * 0.58, cx, cy, baseR * 1.03)
+    g.addColorStop(0, 'rgba(3,3,3,0.98)')
+    g.addColorStop(0.72, 'rgba(3,3,3,0.74)')
+    g.addColorStop(1, 'rgba(3,3,3,0)')
+    ctx.fillStyle = g
+    ctx.beginPath()
+    ctx.arc(cx, cy, baseR * 0.95, 0, Math.PI * 2)
+    ctx.fill()
   }
 
   function draw() {
@@ -57,31 +133,21 @@
     const w = canvas.width / dpr
     const h = canvas.height / dpr
 
-    ctx.clearRect(0, 0, canvas.width, canvas.height)
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+    ctx.clearRect(0, 0, w, h)
 
     t += cfg.speed
 
-    const cx = canvas.width / 2
-    const cy = canvas.height / 2
+    const cx = w / 2
+    const cy = h / 2
     const baseR = (Math.min(w, h) / 2) * 0.62
+    const pulse = 1 + Math.sin(t * 6) * cfg.pulse * 0.08
+    const amp = cfg.amplitude * pulse
 
-    // glow bloom layer
-    const bloom = ctx.createRadialGradient(cx, cy, baseR * 0.4, cx, cy, baseR * 1.3)
-    const [r, g, b] = COLORS[0]
-    bloom.addColorStop(0, `rgba(${r},${g},${b},0)`)
-    bloom.addColorStop(0.6, `rgba(${r},${g},${b},${cfg.alpha * 0.08})`)
-    bloom.addColorStop(1, `rgba(${r},${g},${b},0)`)
-    ctx.fillStyle = bloom
-    ctx.fillRect(0, 0, canvas.width, canvas.height)
-
-    for (let i = 0; i < cfg.rings; i++) {
-      const ringR = baseR + (i - cfg.rings / 2) * 7
-      const phase = t + i * (Math.PI * 2 / cfg.rings)
-      const ca = COLORS[i % COLORS.length]
-      const cb = COLORS[(i + 1) % COLORS.length]
-      const ringAlpha = cfg.alpha * (1 - i * 0.15)
-      drawRing(ctx, cx, cy, ringR, cfg.amplitude, phase, ca, cb, ringAlpha)
-    }
+    drawDottedField(ctx, w, h)
+    drawBloom(ctx, cx, cy, baseR, amp, t, cfg.alpha)
+    drawAuraBands(ctx, cx, cy, baseR, amp, t, cfg.alpha)
+    drawCoreCutout(ctx, cx, cy, baseR)
 
     raf = requestAnimationFrame(draw)
   }
@@ -90,8 +156,6 @@
     const dpr = window.devicePixelRatio || 1
     canvas.width = size * dpr
     canvas.height = size * dpr
-    const ctx = canvas.getContext('2d')!
-    ctx.scale(dpr, dpr)
     draw()
   })
 

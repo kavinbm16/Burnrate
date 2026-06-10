@@ -8,6 +8,7 @@ import google.genai as genai
 from google.genai import types as gtypes
 
 from backend.config import AppConfig
+from backend.system_instruction import SYSTEM_INSTRUCTION
 from backend.cost_calculator import calculate_turn_cost
 from backend.gemini_errors import check_dns, format_gemini_connect_error
 from backend.metrics_store import MetricsStore, TurnRecord
@@ -81,6 +82,7 @@ class GeminiWrapper:
         return gtypes.LiveConnectConfig(
             response_modalities=[response_modality],
             tools=tools if tools else None,
+            system_instruction=gtypes.Content(parts=[gtypes.Part(text=SYSTEM_INSTRUCTION)]),
         )
 
     def _compress_if_enabled(self, session: GeminiSession, messages: list[dict]) -> list[dict]:
@@ -165,6 +167,8 @@ class GeminiWrapper:
         text: str,
         live_session: object,
         on_metrics: Callable[[TurnMetrics], None] | None = None,
+        audio_input_sec: float = 0.0,
+        audio_output_sec: float = 0.0,
     ) -> str:
         """Send one text turn, collect response, record metrics.
 
@@ -198,7 +202,7 @@ class GeminiWrapper:
                 break
 
         session.history.append({"role": "assistant", "content": response_text})
-        await self._record_turn(session, usage, 0.0, 0.0, on_metrics)
+        await self._record_turn(session, usage, audio_input_sec, audio_output_sec, on_metrics)
         return response_text
 
     async def create_live_connect_config_for_sim(self, session: GeminiSession) -> gtypes.LiveConnectConfig:

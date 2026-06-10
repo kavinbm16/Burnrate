@@ -147,7 +147,7 @@
   })
 </script>
 
-<div class="w-full flex flex-col gap-6">
+<div class="w-full flex flex-col gap-6 live-command-surface">
   {#if micPermission === 'denied'}
     <Card.Root class="border-amber-500/40 bg-amber-500/5">
       <Card.Content class="py-4 text-sm">
@@ -183,8 +183,9 @@
     <div class="flex flex-col gap-6 lg:col-span-3">
       
       <!-- Session controls -->
-      <Card.Root class="glass glow-primary">
+      <Card.Root class="console-panel glow-primary">
         <Card.Header>
+          <div class="data-label">Run Console</div>
           <Card.Title>Live Session Controls</Card.Title>
           <Card.Description>Configure tools and headroom compression, then start streaming live.</Card.Description>
         </Card.Header>
@@ -218,21 +219,22 @@
       </Card.Root>
 
       <!-- Scrollable Turn Feed -->
-      <Card.Root class="glass flex-1 flex flex-col min-h-[500px]">
+      <Card.Root class="console-panel flex-1 flex flex-col min-h-[500px]">
         <Card.Header>
+          <div class="data-label">Stream Log</div>
           <Card.Title>Real-Time Turn Feed</Card.Title>
           <Card.Description>Interactive timeline showing Gemini Live token pricing, usage metadata, and stream records.</Card.Description>
         </Card.Header>
         <Card.Content class="flex-1 flex flex-col pr-2">
           {#if feed.length === 0}
-            <div class="flex-grow flex flex-col items-center justify-center py-20 text-sm text-muted-foreground border border-dashed rounded-lg bg-card/10">
+            <div class="telemetry-grid flex-grow flex flex-col items-center justify-center py-20 text-sm text-muted-foreground border border-dashed rounded-lg bg-card/10">
               <RadioIcon class="size-8 text-muted-foreground mb-3 opacity-60 {running && !muted ? 'animate-ping' : ''}" />
               {running ? 'Speak now — turns will record here as the model answers.' : 'Initialize a live session to display turn metrics.'}
             </div>
           {:else}
             <div class="flex-grow flex flex-col gap-2 max-h-[520px] overflow-y-auto pr-1">
               {#each feed as m (m.turn_index)}
-                <div class="flex items-center justify-between rounded-lg border px-3.5 py-3 text-sm bg-card/30 hover:bg-card/60 border-border/60 hover:border-primary/30 transition-all duration-200">
+                <div class="flex items-center justify-between rounded-md border px-3.5 py-3 text-sm bg-card/40 hover:bg-card/70 border-border/70 hover:border-primary/35 transition-all duration-200">
                   <div class="flex items-center gap-3">
                     <Badge variant="secondary" class="font-mono bg-primary/10 border-primary/20 text-primary">#{m.turn_index}</Badge>
                     <span class="text-xs text-muted-foreground">
@@ -256,15 +258,16 @@
     <div class="flex flex-col gap-6 lg:col-span-2">
       
       <!-- Audio Visualizer Card -->
-      <Card.Root class="glass glow-hover flex flex-col items-center">
+      <Card.Root class="audio-wave-card signal-panel glow-hover flex flex-col items-center overflow-hidden">
         <Card.Header class="w-full">
+          <div class="data-label">Signal Monitor</div>
           <Card.Title>Live audio wave</Card.Title>
           <Card.Description>Visual feedback of microphone input streaming to Gemini.</Card.Description>
         </Card.Header>
         <Card.Content class="flex flex-col items-center gap-3 pb-6">
           <AuraVisualizer
             state={running && muted ? 'muted' : running ? 'speaking' : 'idle'}
-            size={180}
+            size={220}
           />
           <p class="text-xs text-muted-foreground">
             {#if running && muted}
@@ -279,8 +282,9 @@
       </Card.Root>
 
       <!-- Cost Thresholds -->
-      <Card.Root class="glass glow-hover">
+      <Card.Root class="console-panel glow-hover">
         <Card.Header>
+          <div class="data-label">Safety Rail</div>
           <Card.Title>Budget limits & Safety</Card.Title>
           <Card.Description>Set a budget ceiling to automatically pause or warn on high token spend.</Card.Description>
         </Card.Header>
@@ -303,15 +307,15 @@
 
       <!-- Gauges -->
       <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <div class="rounded-xl border p-4 bg-card/40 relative overflow-hidden glass">
+        <div class="console-panel p-4">
           <div class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Duration</div>
           <div class="mt-2 text-xl font-bold tabular-nums text-foreground">{duration(elapsed)}</div>
         </div>
-        <div class="rounded-xl border p-4 bg-card/40 relative overflow-hidden glass">
+        <div class="console-panel p-4">
           <div class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Cost</div>
           <div class="mt-2 text-xl font-bold tabular-nums text-emerald-400">{usd(totalCost)}</div>
         </div>
-        <div class="rounded-xl border p-4 bg-card/40 relative overflow-hidden glass">
+        <div class="console-panel p-4">
           <div class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Latest turn</div>
           <div class="mt-2 text-xl font-bold tabular-nums text-cyan-400">
             {#if feed.length > 0}
@@ -325,8 +329,9 @@
 
       <!-- Cost progression sparkline -->
       {#if sparkline.length > 1}
-        <Card.Root class="glass flex-grow">
+        <Card.Root class="console-panel flex-grow">
           <Card.Header>
+            <div class="data-label">Cost Trace</div>
             <Card.Title>Session cost accumulation</Card.Title>
           </Card.Header>
           <Card.Content>
@@ -348,3 +353,21 @@
     </div>
   </div>
 </div>
+
+<style>
+  :global(.audio-wave-card) {
+    background-image:
+      radial-gradient(circle, rgba(255, 255, 255, 0.07) 1px, transparent 1px),
+      radial-gradient(circle at 50% 48%, rgba(236, 72, 153, 0.12), transparent 32%),
+      radial-gradient(circle at 50% 58%, rgba(14, 165, 233, 0.1), transparent 34%);
+    background-position:
+      0 0,
+      center,
+      center;
+    background-size:
+      6px 6px,
+      100% 100%,
+      100% 100%;
+    background-color: rgba(3, 3, 3, 0.42);
+  }
+</style>

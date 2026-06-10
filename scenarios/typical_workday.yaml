@@ -1,6 +1,8 @@
 name: typical_workday
 description: "Simulates a typical 30-minute robot interaction"
 avg_turn_duration_sec: 25
+avg_audio_input_sec: 8
+avg_audio_output_sec: 17
 system_prompt: "You are CC, a helpful desktop robot assistant."
 turns:
   - "Good morning! What's the weather like today?"

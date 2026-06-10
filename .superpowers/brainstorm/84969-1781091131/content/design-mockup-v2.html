@@ -1,0 +1,194 @@
+<h2>IsometricCityChart — Fixed 3D Geometry</h2>
+<p class="subtitle">Cabinet oblique projection: front face + receding top + receding right side. Hover shown on building 7.</p>
+
+<div class="mockup">
+  <div class="mockup-header">Analytics — Hero Card (canvas will render this)</div>
+  <div class="mockup-body" style="background:#07070f;padding:20px;border-radius:8px">
+
+    <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:18px">
+
+      <!-- header row -->
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+        <div>
+          <div style="color:#f8fafc;font-weight:700;font-size:14px;letter-spacing:-0.01em">Token City</div>
+          <div style="color:#475569;font-size:11px;margin-top:1px">Each building = one session · height = cost · color = config</div>
+        </div>
+        <div style="display:flex;gap:14px">
+          <span style="display:flex;align-items:center;gap:4px;font-size:10px;color:#64748b"><span style="width:9px;height:9px;border-radius:1px;background:#f59e0b;display:inline-block"></span>Baseline</span>
+          <span style="display:flex;align-items:center;gap:4px;font-size:10px;color:#64748b"><span style="width:9px;height:9px;border-radius:1px;background:#f97316;display:inline-block"></span>Tools</span>
+          <span style="display:flex;align-items:center;gap:4px;font-size:10px;color:#64748b"><span style="width:9px;height:9px;border-radius:1px;background:#ef4444;display:inline-block"></span>Headroom</span>
+          <span style="display:flex;align-items:center;gap:4px;font-size:10px;color:#64748b"><span style="width:9px;height:9px;border-radius:1px;background:#ec4899;display:inline-block"></span>Full</span>
+        </div>
+      </div>
+
+      <!-- SVG canvas area -->
+      <div style="background:#04040c;border-radius:8px;overflow:hidden">
+        <svg width="100%" viewBox="0 0 580 230" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <!-- Subtle glow for hovered building -->
+            <filter id="hov" x="-20%" y="-20%" width="140%" height="140%">
+              <feGaussianBlur stdDeviation="4" result="b"/>
+              <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+            </filter>
+            <!-- Floor grid gradient -->
+            <linearGradient id="floor" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#1e293b" stop-opacity="0.6"/>
+              <stop offset="100%" stop-color="#0f172a" stop-opacity="0.2"/>
+            </linearGradient>
+          </defs>
+
+          <!-- ── GROUND PLANE ─────────────────────────────────────────── -->
+          <!-- cabinet projection: depth goes up-right at bd=18, bdh=9 -->
+          <polygon points="42,195 530,195 548,186 60,186" fill="url(#floor)" stroke="#1e293b" stroke-width="0.5"/>
+
+          <!-- ground grid slot dividers (front-to-back projection lines) -->
+          <g stroke="#1e293b" stroke-width="0.5" opacity="0.7">
+            <line x1="42"  y1="195" x2="60"  y2="186"/>
+            <line x1="90"  y1="195" x2="108" y2="186"/>
+            <line x1="138" y1="195" x2="156" y2="186"/>
+            <line x1="186" y1="195" x2="204" y2="186"/>
+            <line x1="234" y1="195" x2="252" y2="186"/>
+            <line x1="282" y1="195" x2="300" y2="186"/>
+            <line x1="330" y1="195" x2="348" y2="186"/>
+            <line x1="378" y1="195" x2="396" y2="186"/>
+            <line x1="426" y1="195" x2="444" y2="186"/>
+            <line x1="474" y1="195" x2="492" y2="186"/>
+            <line x1="522" y1="195" x2="540" y2="186"/>
+          </g>
+          <!-- horizontal ground lines (front edge + back edge) -->
+          <line x1="42" y1="195" x2="530" y2="195" stroke="#1e293b" stroke-width="0.5" opacity="0.7"/>
+          <line x1="60" y1="186" x2="548" y2="186" stroke="#1e293b" stroke-width="0.3" opacity="0.4"/>
+
+          <!-- ── BUILDINGS ────────────────────────────────────────────── -->
+          <!-- Format: front(rect), top(parallelogram), right(parallelogram) -->
+          <!-- bw=30, bd=18, bdh=9, baseline=195, slot=48 -->
+
+          <!-- B0: baseline ($0.02, bh=17) x=42 -->
+          <polygon points="42,178 72,178 72,195 42,195"   fill="#d97706"/>
+          <polygon points="42,178 72,178 90,169 60,169"   fill="#fbbf24"/>
+          <polygon points="72,178 72,195 90,186 90,169"   fill="#92400e"/>
+          <!-- B0 base shadow -->
+          <polygon points="42,192 72,192 72,195 42,195"   fill="#000" opacity="0.25"/>
+
+          <!-- B1: tools ($0.09, bh=90) x=90 -->
+          <polygon points="90,105 120,105 120,195 90,195"  fill="#ea580c"/>
+          <polygon points="90,105 120,105 138,96 108,96"   fill="#fb923c"/>
+          <polygon points="120,105 120,195 138,186 138,96" fill="#7c2d12"/>
+          <polygon points="90,192 120,192 120,195 90,195"  fill="#000" opacity="0.25"/>
+
+          <!-- B2: headroom ($0.04, bh=38) x=138 -->
+          <polygon points="138,157 168,157 168,195 138,195" fill="#dc2626"/>
+          <polygon points="138,157 168,157 186,148 156,148" fill="#f87171"/>
+          <polygon points="168,157 168,195 186,186 186,148" fill="#7f1d1d"/>
+          <polygon points="138,192 168,192 168,195 138,195" fill="#000" opacity="0.25"/>
+
+          <!-- B3: full ($0.15, bh=135) x=186  — HOVERED STATE -->
+          <g filter="url(#hov)">
+          <polygon points="186,60 216,60 216,195 186,195"  fill="#db2777" opacity="1"/>
+          <polygon points="186,60 216,60 234,51 204,51"    fill="#f9a8d4"/>
+          <polygon points="216,60 216,195 234,186 234,51"  fill="#9d174d"/>
+          </g>
+          <polygon points="186,192 216,192 216,195 186,195" fill="#000" opacity="0.25"/>
+          <!-- hover outline -->
+          <polygon points="186,60 216,60 234,51 204,51 186,60" fill="none" stroke="#fda4af" stroke-width="1" opacity="0.7"/>
+          <polygon points="186,60 216,60 216,195 186,195 186,60" fill="none" stroke="#fda4af" stroke-width="1" opacity="0.7"/>
+          <polygon points="216,60 216,195 234,186 234,51 216,60" fill="none" stroke="#fda4af" stroke-width="1" opacity="0.7"/>
+
+          <!-- B4: baseline ($0.018, bh=15) x=234 -->
+          <polygon points="234,180 264,180 264,195 234,195" fill="#d97706"/>
+          <polygon points="234,180 264,180 282,171 252,171" fill="#fbbf24"/>
+          <polygon points="264,180 264,195 282,186 282,171" fill="#92400e"/>
+          <polygon points="234,192 264,192 264,195 234,195" fill="#000" opacity="0.25"/>
+
+          <!-- B5: tools ($0.11, bh=105) x=282 -->
+          <polygon points="282,90 312,90 312,195 282,195"  fill="#ea580c"/>
+          <polygon points="282,90 312,90 330,81 300,81"    fill="#fb923c"/>
+          <polygon points="312,90 312,195 330,186 330,81"  fill="#7c2d12"/>
+          <polygon points="282,192 312,192 312,195 282,195" fill="#000" opacity="0.25"/>
+
+          <!-- B6: headroom ($0.03, bh=28) x=330 -->
+          <polygon points="330,167 360,167 360,195 330,195" fill="#dc2626"/>
+          <polygon points="330,167 360,167 378,158 348,158" fill="#f87171"/>
+          <polygon points="360,167 360,195 378,186 378,158" fill="#7f1d1d"/>
+          <polygon points="330,192 360,192 360,195 330,195" fill="#000" opacity="0.25"/>
+
+          <!-- B7: full ($0.13, bh=120) x=378 -->
+          <polygon points="378,75 408,75 408,195 378,195"  fill="#db2777"/>
+          <polygon points="378,75 408,75 426,66 396,66"    fill="#f472b6"/>
+          <polygon points="408,75 408,195 426,186 426,66"  fill="#9d174d"/>
+          <polygon points="378,192 408,192 408,195 378,195" fill="#000" opacity="0.25"/>
+
+          <!-- B8: baseline ($0.022, bh=20) x=426 -->
+          <polygon points="426,175 456,175 456,195 426,195" fill="#d97706"/>
+          <polygon points="426,175 456,175 474,166 444,166" fill="#fbbf24"/>
+          <polygon points="456,175 456,195 474,186 474,166" fill="#92400e"/>
+          <polygon points="426,192 456,192 456,195 426,195" fill="#000" opacity="0.25"/>
+
+          <!-- B9: tools ($0.08, bh=80) x=474 -->
+          <polygon points="474,115 504,115 504,195 474,195" fill="#ea580c"/>
+          <polygon points="474,115 504,115 522,106 492,106" fill="#fb923c"/>
+          <polygon points="504,115 504,195 522,186 522,106" fill="#7c2d12"/>
+          <polygon points="474,192 504,192 504,195 474,195" fill="#000" opacity="0.25"/>
+
+          <!-- ── HOVER TOOLTIP (building 3) ────────────────────────── -->
+          <rect x="236" y="32" width="158" height="68" rx="5" fill="#0f172a" stroke="#db2777" stroke-width="1"/>
+          <rect x="236" y="32" width="158" height="13" rx="5 5 0 0" fill="#db2777" opacity="0.15"/>
+          <text x="244" y="43" fill="#f8fafc" font-size="10" font-weight="600" font-family="system-ui">typical_workday</text>
+          <text x="244" y="57" fill="#f472b6" font-size="9" font-family="monospace">Full stack · tools + headroom</text>
+          <text x="244" y="70" fill="#94a3b8" font-size="9" font-family="system-ui">Cost </text>
+          <text x="268" y="70" fill="#f8fafc" font-size="9" font-weight="700" font-family="monospace">$0.15</text>
+          <text x="300" y="70" fill="#94a3b8" font-size="9" font-family="system-ui">  2m 41s</text>
+          <text x="244" y="83" fill="#94a3b8" font-size="9" font-family="system-ui">↑ 14.2k tok  ↓ 3.8k tok</text>
+          <!-- connector line from tooltip to building -->
+          <line x1="280" y1="100" x2="260" y2="60" stroke="#db2777" stroke-width="0.8" stroke-dasharray="3,2" opacity="0.6"/>
+          <circle cx="280" cy="100" r="2.5" fill="#db2777" opacity="0.8"/>
+
+          <!-- ── DATE LABELS ────────────────────────────────────────── -->
+          <g fill="#334155" font-size="8.5" font-family="system-ui" text-anchor="middle">
+            <text x="57"  y="210">Jun 8</text>
+            <text x="105" y="210">Jun 8</text>
+            <text x="153" y="210">Jun 9</text>
+            <text x="201" y="210">Jun 9</text>
+            <text x="249" y="210">Jun 9</text>
+            <text x="297" y="210">Jun 10</text>
+            <text x="345" y="210">Jun 10</text>
+            <text x="393" y="210">Jun 10</text>
+            <text x="441" y="210">Jun 10</text>
+            <text x="489" y="210">Jun 10</text>
+          </g>
+
+          <!-- ── Y-AXIS COST HINTS ──────────────────────────────────── -->
+          <line x1="30" y1="150" x2="42" y2="150" stroke="#1e293b" stroke-width="0.5"/>
+          <line x1="30" y1="105" x2="42" y2="105" stroke="#1e293b" stroke-width="0.5"/>
+          <line x1="30" y1="60"  x2="42" y2="60"  stroke="#1e293b" stroke-width="0.5"/>
+          <text x="28" y="153" fill="#334155" font-size="7.5" text-anchor="end" font-family="monospace">$0.05</text>
+          <text x="28" y="108" fill="#334155" font-size="7.5" text-anchor="end" font-family="monospace">$0.10</text>
+          <text x="28" y="63"  fill="#334155" font-size="7.5" text-anchor="end" font-family="monospace">$0.15</text>
+          <line x1="42" y1="195" x2="42" y2="55" stroke="#1e293b" stroke-width="0.5"/>
+        </svg>
+      </div>
+
+      <!-- stat bar below canvas -->
+      <div style="display:flex;gap:24px;margin-top:10px;padding:8px 12px;background:rgba(0,0,0,0.25);border-radius:8px;border:1px solid rgba(255,255,255,0.04)">
+        <div>
+          <div style="color:#475569;font-size:9px;text-transform:uppercase;letter-spacing:0.06em">Sessions</div>
+          <div style="color:#f8fafc;font-size:17px;font-weight:700">10</div>
+        </div>
+        <div>
+          <div style="color:#475569;font-size:9px;text-transform:uppercase;letter-spacing:0.06em">Total spend</div>
+          <div style="color:#34d399;font-size:17px;font-weight:700">$0.64</div>
+        </div>
+        <div>
+          <div style="color:#475569;font-size:9px;text-transform:uppercase;letter-spacing:0.06em">Peak session</div>
+          <div style="color:#f472b6;font-size:17px;font-weight:700">$0.15</div>
+        </div>
+        <div>
+          <div style="color:#475569;font-size:9px;text-transform:uppercase;letter-spacing:0.06em">Avg / session</div>
+          <div style="color:#38bdf8;font-size:17px;font-weight:700">$0.064</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<p class="subtitle" style="margin-top:16px">Building 3 shown in hover state (glow + tooltip). Does this geometry look right now?</p>

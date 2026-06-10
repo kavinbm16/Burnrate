@@ -13,6 +13,7 @@
   import { api, type Projection } from '$lib/api'
   import { app } from '$lib/state.svelte'
   import { usd, tokens, duration, timestamp, configLabel } from '$lib/format'
+  import IsometricCityChart from '$lib/components/IsometricCityChart.svelte'
   import SessionDrilldown from './SessionDrilldown.svelte'
   import DownloadIcon from '@lucide/svelte/icons/download'
   import Trash2Icon from '@lucide/svelte/icons/trash-2'
@@ -222,6 +223,12 @@
       </Card.Header>
     </Card.Root>
   </div>
+
+  <IsometricCityChart
+    sessions={app.sessions}
+    comparison={app.comparison}
+    onDrilldown={(id) => (app.drilldownSessionId = id)}
+  />
 
   <!-- Insight cards -->
   <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">

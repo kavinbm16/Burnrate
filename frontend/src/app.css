@@ -40,38 +40,38 @@
 }
 
 .dark {
-  --background: oklch(0.075 0.01 50);
-  --foreground: oklch(0.96 0.008 55);
-  --card: oklch(0.10 0.012 50 / 70%);
-  --card-foreground: oklch(0.96 0.008 55);
-  --popover: oklch(0.10 0.012 50);
-  --popover-foreground: oklch(0.96 0.008 55);
-  --primary: oklch(0.72 0.185 55); /* Amber/orange — BURNRATE fire */
+  --background: oklch(0.055 0.005 65);
+  --foreground: oklch(0.94 0.014 78);
+  --card: oklch(0.105 0.01 68 / 82%);
+  --card-foreground: oklch(0.94 0.014 78);
+  --popover: oklch(0.09 0.01 68);
+  --popover-foreground: oklch(0.94 0.014 78);
+  --primary: oklch(0.74 0.18 55);
   --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.14 0.015 50);
-  --secondary-foreground: oklch(0.96 0.008 55);
-  --muted: oklch(0.13 0.015 50);
-  --muted-foreground: oklch(0.60 0.02 55);
-  --accent: oklch(0.15 0.015 50);
-  --accent-foreground: oklch(0.72 0.185 55);
-  --destructive: oklch(0.62 0.22 25);
+  --secondary: oklch(0.16 0.012 68);
+  --secondary-foreground: oklch(0.91 0.012 78);
+  --muted: oklch(0.14 0.012 68);
+  --muted-foreground: oklch(0.68 0.018 78);
+  --accent: oklch(0.18 0.018 190);
+  --accent-foreground: oklch(0.79 0.14 190);
+  --destructive: oklch(0.68 0.2 22);
   --destructive-foreground: oklch(0.985 0 0);
-  --border: oklch(0.22 0.018 50 / 30%);
-  --input: oklch(0.22 0.018 50 / 40%);
-  --ring: oklch(0.72 0.185 55);
-  --chart-1: oklch(0.72 0.185 55);  /* Orange/amber */
-  --chart-2: oklch(0.72 0.16 185);  /* Cyan/teal */
-  --chart-3: oklch(0.74 0.17 145);  /* Green */
-  --chart-4: oklch(0.82 0.17 85);   /* Yellow */
-  --chart-5: oklch(0.65 0.22 25);   /* Red/coral */
-  --sidebar: oklch(0.08 0.01 50);
-  --sidebar-foreground: oklch(0.96 0.008 55);
-  --sidebar-primary: oklch(0.72 0.185 55);
+  --border: oklch(0.26 0.018 64 / 42%);
+  --input: oklch(0.18 0.014 68 / 72%);
+  --ring: oklch(0.74 0.18 55);
+  --chart-1: oklch(0.74 0.18 55);
+  --chart-2: oklch(0.76 0.14 195);
+  --chart-3: oklch(0.76 0.16 155);
+  --chart-4: oklch(0.73 0.2 340);
+  --chart-5: oklch(0.68 0.2 22);
+  --sidebar: oklch(0.065 0.008 68);
+  --sidebar-foreground: oklch(0.94 0.014 78);
+  --sidebar-primary: oklch(0.74 0.18 55);
   --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.13 0.015 50);
-  --sidebar-accent-foreground: oklch(0.96 0.008 55);
-  --sidebar-border: oklch(0.22 0.018 50 / 20%);
-  --sidebar-ring: oklch(0.72 0.185 55);
+  --sidebar-accent: oklch(0.15 0.012 68);
+  --sidebar-accent-foreground: oklch(0.94 0.014 78);
+  --sidebar-border: oklch(0.25 0.018 64 / 32%);
+  --sidebar-ring: oklch(0.74 0.18 55);
 }
 
 @theme inline {
@@ -119,31 +119,87 @@
   }
   body {
     @apply bg-background text-foreground;
-    background-image: 
-      radial-gradient(at 0% 0%, color-mix(in srgb, var(--primary) 7%, transparent) 0px, transparent 40%),
-      radial-gradient(at 100% 100%, color-mix(in srgb, var(--chart-2) 5%, transparent) 0px, transparent 40%);
+    background-image:
+      linear-gradient(rgba(255, 138, 31, 0.035) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(34, 211, 238, 0.026) 1px, transparent 1px),
+      radial-gradient(at 12% 0%, color-mix(in srgb, var(--primary) 9%, transparent) 0px, transparent 36%),
+      radial-gradient(at 92% 18%, color-mix(in srgb, var(--chart-2) 7%, transparent) 0px, transparent 34%),
+      linear-gradient(180deg, #050505 0%, #090807 45%, #050505 100%);
+    background-size: 28px 28px, 28px 28px, auto, auto, auto;
     background-attachment: fixed;
+    font-feature-settings: "tnum";
+  }
+
+  ::selection {
+    background: color-mix(in srgb, var(--primary) 35%, transparent);
+    color: var(--foreground);
+  }
+
+  * {
+    scrollbar-color: color-mix(in srgb, var(--primary) 30%, transparent) transparent;
+  }
+}
+
+@layer components {
+  [data-slot="card-title"] {
+    font-weight: 700;
+    letter-spacing: 0;
+  }
+
+  [data-slot="card-description"] {
+    line-height: 1.45;
+  }
+
+  [data-slot="button"] {
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.055);
+  }
+
+  [data-slot="button"]:where(.bg-primary, [class*="bg-primary"]) {
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.18),
+      0 0 24px color-mix(in srgb, var(--primary) 18%, transparent);
+  }
+
+  .console-panel::before,
+  .signal-panel::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+      linear-gradient(90deg, color-mix(in srgb, var(--primary) 42%, transparent) 0 22px, transparent 22px calc(100% - 22px), color-mix(in srgb, var(--primary) 22%, transparent) calc(100% - 22px) 100%) top / 100% 1px no-repeat,
+      linear-gradient(90deg, color-mix(in srgb, var(--chart-2) 28%, transparent) 0 16px, transparent 16px calc(100% - 16px), color-mix(in srgb, var(--chart-2) 16%, transparent) calc(100% - 16px) 100%) bottom / 100% 1px no-repeat;
+    opacity: 0.72;
   }
 }
 
 @utility glass {
-  background: color-mix(in srgb, var(--card) 60%, transparent);
-  backdrop-filter: blur(16px);
-  border: 1px solid color-mix(in srgb, var(--border) 40%, transparent);
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.25);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.025), rgba(255, 255, 255, 0)),
+    color-mix(in srgb, var(--card) 86%, transparent);
+  backdrop-filter: blur(10px);
+  border: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.035),
+    0 18px 44px rgba(0, 0, 0, 0.32);
 }
 
 @utility glow-primary {
-  box-shadow: 0 0 15px color-mix(in srgb, var(--primary) 25%, transparent);
-  border-color: color-mix(in srgb, var(--primary) 40%, transparent);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 0 0 1px color-mix(in srgb, var(--primary) 32%, transparent),
+    0 0 22px color-mix(in srgb, var(--primary) 12%, transparent);
+  border-color: color-mix(in srgb, var(--primary) 34%, transparent);
 }
 
 @utility glow-hover {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   &:hover {
-    box-shadow: 0 0 25px color-mix(in srgb, var(--primary) 25%, transparent);
-    border-color: color-mix(in srgb, var(--primary) 50%, transparent);
-    transform: translateY(-2px);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.045),
+      0 0 0 1px color-mix(in srgb, var(--primary) 24%, transparent),
+      0 18px 48px rgba(0, 0, 0, 0.36);
+    border-color: color-mix(in srgb, var(--primary) 36%, transparent);
   }
 }
 
@@ -166,4 +222,41 @@
   animation: pulse-glow 2s infinite ease-in-out;
 }
 
+@utility telemetry-grid {
+  background-image:
+    linear-gradient(rgba(255, 138, 31, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(34, 211, 238, 0.045) 1px, transparent 1px);
+  background-size: 22px 22px;
+}
 
+@utility data-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--muted-foreground) 88%, transparent);
+}
+
+@utility console-panel {
+  position: relative;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.026), rgba(255, 255, 255, 0)),
+    radial-gradient(circle at 50% 0%, color-mix(in srgb, var(--primary) 9%, transparent), transparent 45%),
+    color-mix(in srgb, var(--card) 88%, black 12%);
+  border: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.045),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.35),
+    0 18px 48px rgba(0, 0, 0, 0.34);
+}
+
+@utility signal-panel {
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 50% 40%, color-mix(in srgb, var(--chart-2) 12%, transparent), transparent 38%),
+    radial-gradient(circle at 50% 60%, color-mix(in srgb, var(--chart-4) 9%, transparent), transparent 40%),
+    color-mix(in srgb, var(--card) 90%, black 10%);
+}

@@ -1,0 +1,83 @@
+<h2>3D Token City — Implementation Approaches</h2>
+<p class="subtitle">Each builds the isometric city effect differently. Pick the one that fits your goals.</p>
+
+<div class="cards">
+
+  <div class="card" data-choice="canvas" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#0f172a;padding:16px;font-family:monospace;display:flex;align-items:center;justify-content:center;min-height:140px">
+      <svg width="200" height="120" viewBox="0 0 200 120">
+        <!-- isometric buildings drawn as flat SVG approximation -->
+        <!-- building 1 (short) -->
+        <polygon points="30,90 50,80 50,60 30,70" fill="#f59e0b" opacity="0.9"/>
+        <polygon points="50,80 70,90 70,70 50,60" fill="#d97706" opacity="0.9"/>
+        <polygon points="30,70 50,60 70,70 50,80" fill="#fbbf24" opacity="0.9"/>
+        <!-- building 2 (tall) -->
+        <polygon points="65,90 85,80 85,40 65,50" fill="#f59e0b" opacity="0.9"/>
+        <polygon points="85,80 105,90 105,50 85,40" fill="#d97706" opacity="0.9"/>
+        <polygon points="65,50 85,40 105,50 85,60" fill="#fbbf24" opacity="0.9"/>
+        <!-- building 3 (medium) -->
+        <polygon points="100,90 120,80 120,55 100,65" fill="#f59e0b" opacity="0.9"/>
+        <polygon points="120,80 140,90 140,65 120,55" fill="#d97706" opacity="0.9"/>
+        <polygon points="100,65 120,55 140,65 120,75" fill="#fbbf24" opacity="0.9"/>
+        <!-- building 4 (tall) -->
+        <polygon points="135,90 155,80 155,35 135,45" fill="#f59e0b" opacity="0.9"/>
+        <polygon points="155,80 175,90 175,45 155,35" fill="#d97706" opacity="0.9"/>
+        <polygon points="135,45 155,35 175,45 155,55" fill="#fbbf24" opacity="0.9"/>
+        <!-- floor grid lines -->
+        <line x1="15" y1="95" x2="185" y2="95" stroke="#334155" stroke-width="1"/>
+        <line x1="15" y1="95" x2="100" y2="110" stroke="#334155" stroke-width="1"/>
+        <line x1="185" y1="95" x2="100" y2="110" stroke="#334155" stroke-width="1"/>
+      </svg>
+    </div>
+    <div class="card-body">
+      <h3>A — Canvas (Recommended)</h3>
+      <p>Custom Svelte canvas component. Draws isometric buildings frame-by-frame. Hover → highlight + tooltip. Consistent with existing <code>AuraVisualizer</code> pattern in this codebase. No new dependencies.</p>
+      <div class="pros-cons" style="font-size:12px;margin-top:8px">
+        <div class="pros"><h4>Pros</h4><ul><li>Zero new deps</li><li>Full pixel control</li><li>Smooth animated entrance</li><li>Matches existing code style</li></ul></div>
+        <div class="cons"><h4>Cons</h4><ul><li>~150 lines of canvas math</li><li>Accessibility requires extra work</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" data-choice="css" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#0f172a;padding:16px;display:flex;align-items:center;justify-content:center;min-height:140px">
+      <div style="display:flex;gap:6px;align-items:flex-end;transform:rotateX(45deg) rotateZ(-45deg);transform-style:preserve-3d;margin-top:20px">
+        <div style="width:24px;background:linear-gradient(to top,#d97706,#f59e0b);border-radius:2px 2px 0 0" title="$0.02" id="b1"></div>
+        <div style="width:24px;background:linear-gradient(to top,#d97706,#f59e0b);border-radius:2px 2px 0 0" title="$0.08" id="b2"></div>
+        <div style="width:24px;background:linear-gradient(to top,#d97706,#f59e0b);border-radius:2px 2px 0 0" title="$0.05" id="b3"></div>
+        <div style="width:24px;background:linear-gradient(to top,#d97706,#f59e0b);border-radius:2px 2px 0 0" title="$0.12" id="b4"></div>
+        <div style="width:24px;background:linear-gradient(to top,#d97706,#f59e0b);border-radius:2px 2px 0 0" title="$0.03" id="b5"></div>
+      </div>
+      <style>
+        #b1{height:20px}#b2{height:65px}#b3{height:40px}#b4{height:90px}#b5{height:25px}
+      </style>
+    </div>
+    <div class="card-body">
+      <h3>B — CSS 3D Transforms</h3>
+      <p>Pure CSS <code>rotateX + rotateZ</code> on a flex bar chart. Looks 3D-ish with no canvas. Simplest to build, easiest to style with Tailwind.</p>
+      <div class="pros-cons" style="font-size:12px;margin-top:8px">
+        <div class="pros"><h4>Pros</h4><ul><li>~30 lines of Svelte</li><li>Fully accessible (DOM)</li><li>Easy color theming</li></ul></div>
+        <div class="cons"><h4>Cons</h4><ul><li>Not true isometric — perspective distortion</li><li>No side faces on buildings</li><li>Less impressive than screenshot</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" data-choice="threejs" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#0f172a;padding:16px;display:flex;align-items:center;justify-content:center;min-height:140px">
+      <div style="text-align:center;color:#64748b">
+        <div style="font-size:40px">⬛</div>
+        <div style="font-size:12px;margin-top:8px;color:#f59e0b">Three.js / WebGL</div>
+        <div style="font-size:11px;color:#64748b;margin-top:4px">Real 3D engine<br>~280 KB gzipped</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>C — Three.js (WebGL)</h3>
+      <p>Full 3D engine. Real perspective camera, lighting, shadows. Closest to a game engine. Can rotate/zoom. Massive overkill for a dashboard widget but most impressive ceiling.</p>
+      <div class="pros-cons" style="font-size:12px;margin-top:8px">
+        <div class="pros"><h4>Pros</h4><ul><li>True 3D + orbit controls</li><li>Lighting/reflections</li><li>Unlimited visual depth</li></ul></div>
+        <div class="cons"><h4>Cons</h4><ul><li>+280 KB bundle hit</li><li>Complex integration with Svelte</li><li>Major overkill for a chart</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+</div>
