@@ -1,6 +1,8 @@
 # backend/main.py
 import asyncio
 import json
+import os
+import tempfile
 import uuid
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -204,7 +206,8 @@ async def sim_status(run_id: str):
 # ── REST: Export ────────────────────────────────────────────────────────────
 @app.get("/api/export/csv")
 async def export_csv():
-    tmp_path = "/tmp/cc_bench_export.csv"
+    tmp_dir = tempfile.gettempdir()
+    tmp_path = os.path.join(tmp_dir, "cc_bench_export.csv")
     await exporter.export_sessions_csv(tmp_path)
     return FileResponse(tmp_path, media_type="text/csv", filename="cc_token_benchmark.csv")
 
@@ -295,6 +298,7 @@ async def live_audio(websocket: WebSocket):
         }
 
     receive_task = None
+    send_task = None
     try:
         async with wrapper.client.aio.live.connect(model=wrapper.model, config=live_config) as live_session:
             await websocket.send_json({"type": "session_started", "session_id": session_id})
@@ -310,17 +314,26 @@ async def live_audio(websocket: WebSocket):
                         metrics = await record_live_turn(msg.usage_metadata)
                         await websocket.send_json(metrics)
 
-            receive_task = asyncio.create_task(receive_from_gemini())
+            async def send_to_gemini():
+                while True:
+                    data = await websocket.receive_bytes()
+                    state["input_bytes"] += len(data)
+                    await live_session.send(
+                        input=gtypes.Part(
+                            inline_data=gtypes.Blob(data=data, mime_type="audio/pcm;rate=16000")
+                        ),
+                        end_of_turn=False,
+                    )
 
-            while True:
-                data = await websocket.receive_bytes()
-                state["input_bytes"] += len(data)
-                await live_session.send(
-                    input=gtypes.Part(
-                        inline_data=gtypes.Blob(data=data, mime_type="audio/pcm;rate=16000")
-                    ),
-                    end_of_turn=False,
-                )
+            receive_task = asyncio.create_task(receive_from_gemini())
+            send_task = asyncio.create_task(send_to_gemini())
+
+            done, pending = await asyncio.wait(
+                [receive_task, send_task],
+                return_when=asyncio.FIRST_COMPLETED
+            )
+            for task in done:
+                task.result()
 
     except WebSocketDisconnect:
         pass
@@ -333,8 +346,10 @@ async def live_audio(websocket: WebSocket):
         except Exception:
             pass
     finally:
-        if receive_task:
+        if receive_task and not receive_task.done():
             receive_task.cancel()
+        if send_task and not send_task.done():
+            send_task.cancel()
         elapsed = gemini_session.elapsed_seconds()
         await store.finalize_session(session_id, elapsed, state["total_cost"])
 
