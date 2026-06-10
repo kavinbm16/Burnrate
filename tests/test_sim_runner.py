@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock
 from backend.sim_runner import SimRunner, SimConfig
 
 
