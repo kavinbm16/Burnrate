@@ -1,0 +1,16 @@
+name: typical_workday
+description: "Simulates a typical 30-minute robot interaction"
+avg_turn_duration_sec: 25
+system_prompt: "You are CC, a helpful desktop robot assistant."
+turns:
+  - "Good morning! What's the weather like today?"
+  - "Set a reminder for my 3pm meeting."
+  - "Play some background music."
+  - "What did I have scheduled for yesterday?"
+  - "Send a message to the team saying I'll be 5 minutes late."
+  - "Turn off the lights in the conference room."
+  - "What is the capital of France?"
+  - "Order lunch from the usual place."
+  - "Read out my unread emails."
+  - "How many steps have I taken today?"
+repeat: 1

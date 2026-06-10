@@ -1,0 +1,19 @@
+[gemini]
+api_key = "YOUR_GEMINI_API_KEY"
+model   = "gemini-3.1-flash-live-preview"
+
+[pricing]
+audio_input_per_min   = 0.005
+audio_output_per_min  = 0.018
+text_input_per_mtok   = 0.75
+text_output_per_mtok  = 4.50
+
+# Add your MCP servers below. Supports type = "http" or "stdio".
+# [mcp_servers.filesystem]
+# type    = "stdio"
+# command = "npx"
+# args    = ["-y", "@modelcontextprotocol/server-filesystem", "/tmp"]
+
+# [mcp_servers.my_api]
+# type = "http"
+# url  = "http://localhost:3001"
