@@ -100,9 +100,9 @@ async def sim_status(run_id: str):
 # ── REST: Export ────────────────────────────────────────────────────────────
 @app.get("/api/export/csv")
 async def export_csv():
-    tmp_path = "/tmp/cc_bench_export.csv"
+    tmp_path = "/tmp/burnrate_export.csv"
     await exporter.export_sessions_csv(tmp_path)
-    return FileResponse(tmp_path, media_type="text/csv", filename="cc_token_benchmark.csv")
+    return FileResponse(tmp_path, media_type="text/csv", filename="burnrate_export.csv")
 
 
 @app.get("/api/export/json")
