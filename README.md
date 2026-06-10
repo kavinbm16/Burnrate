@@ -1,6 +1,19 @@
-# Burnrate
+<p align="center">
+  <img src="assets/burnrate-banner.png" alt="Burnrate — Gemini Live cost lab for voice AI robots" width="100%" />
+</p>
 
-**Gemini Live cost lab for voice AI robots.**
+<h1 align="center">Burnrate</h1>
+
+<p align="center">
+  <strong>Gemini Live cost lab for voice AI robots.</strong>
+</p>
+
+<p align="center">
+  <a href="#quick-start">Quick Start</a> ·
+  <a href="#architecture">Architecture</a> ·
+  <a href="#api-reference">API</a> ·
+  <a href="#scenario-format">Scenarios</a>
+</p>
 
 Burnrate measures real token economics for speech-to-speech agents — live mic sessions, fast-forward scenario sims, and side-by-side cost analytics. Built to answer one question with data: *what does one robot cost per hour, day, and month?*
 
@@ -18,16 +31,6 @@ Pricing a voice robot from API list rates alone is misleading. Actual cost depen
 - **Conversation context** — grows over time; compressible with [headroom](https://github.com/humanlayer/headroom)
 
 Burnrate runs the same conversation under four configurations and extrapolates to fleet-scale numbers — session → daily → monthly → *N* robots.
-
-```
-┌──────────────────────────────────────────────────────────────────┐
-│  ◉ BURNRATE                                                      │
-│                                                                  │
-│   Live          Sim              Analytics                       │
-│   mic → API     YAML replay      compare · project · export      │
-│   real-time     8hr in ~3min     CSV for finance                 │
-└──────────────────────────────────────────────────────────────────┘
-```
 
 ---
 
