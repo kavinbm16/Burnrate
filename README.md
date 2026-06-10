@@ -28,7 +28,7 @@ Pricing a voice robot from API list rates alone is misleading. Actual cost depen
 - **Audio I/O** — dominant; billed by the minute, not tokens
 - **System prompt** — fixed per session
 - **MCP tool definitions** — scales with connected servers
-- **Conversation context** — grows over time; compressible with [headroom](https://github.com/humanlayer/headroom)
+- **Conversation context** — grows over time; compressible with [headroom-ai](https://pypi.org/project/headroom-ai/)
 
 Burnrate runs the same conversation under four configurations and extrapolates to fleet-scale numbers — session → daily → monthly → *N* robots.
 
@@ -118,7 +118,7 @@ Rates are configurable in `mcp.toml` — update when Gemini pricing changes.
 ### Install
 
 ```bash
-git clone <repo-url> burnrate
+git clone https://github.com/kavinbm16/Token-usage burnrate
 cd burnrate
 python -m venv .venv
 source .venv/bin/activate   # Windows: .venv\Scripts\activate
@@ -127,12 +127,17 @@ pip install -r requirements.txt
 
 ### Configure
 
-Edit `mcp.toml`:
+Create `.env` with your API key (never commit this file):
+
+```bash
+GEMINI_API=your_api_key_here
+```
+
+Edit `mcp.toml` for model, pricing, and optional MCP servers:
 
 ```toml
 [gemini]
-api_key = "YOUR_GEMINI_API_KEY"
-model   = "gemini-3.1-flash-live-preview"
+model = "gemini-3.1-flash-live-preview"
 
 [pricing]
 audio_input_per_min   = 0.005
@@ -252,7 +257,8 @@ Server sends `session_started`, streaming `metrics` events, and PCM audio bytes.
 
 ```
 burnrate/
-├── mcp.toml                  # API keys, pricing, MCP server configs
+├── .env                      # GEMINI_API key (not committed)
+├── mcp.toml                  # Model, pricing, MCP server configs
 ├── scenarios/
 │   └── typical_workday.yaml  # Example benchmark script
 ├── backend/
@@ -297,7 +303,7 @@ pytest tests/ -v
 |-------|--------|
 | Backend | Python 3.11+, FastAPI, uvicorn |
 | AI | `google-genai` — Gemini Live API |
-| Context | `headroom` — optional message compression |
+| Context | `headroom-ai` — optional message compression |
 | Tools | `mcp` — Model Context Protocol servers |
 | Storage | SQLite via `aiosqlite` |
 | Frontend | Svelte 5 + Vite + Tailwind v4 + shadcn-svelte + LayerChart |

@@ -19,6 +19,7 @@
   import SquareIcon from '@lucide/svelte/icons/square'
   import RadioIcon from '@lucide/svelte/icons/radio'
   import AlertTriangleIcon from '@lucide/svelte/icons/alert-triangle'
+  import AuraVisualizer from '$lib/components/AuraVisualizer.svelte'
 
   let toolsEnabled = $state(false)
   let headroomEnabled = $state(false)
@@ -40,9 +41,6 @@
   let ticker: ReturnType<typeof setInterval> | null = null
   let micPermission = $state<MicPermission>('unknown')
 
-  // Visualizer height arrays for live waveform simulation
-  let waveHeights = $state<number[]>(Array(16).fill(15))
-  let waveTicker: ReturnType<typeof setInterval> | null = null
 
   onMount(async () => {
     micPermission = await queryMicPermission()
@@ -63,18 +61,6 @@
   const sparkConfig = {
     cumulative: { label: 'Cost', color: 'var(--chart-1)' },
   } satisfies Chart.ChartConfig
-
-  function startWaveform() {
-    waveTicker = setInterval(() => {
-      waveHeights = waveHeights.map(() => Math.floor(15 + Math.random() * 85))
-    }, 100)
-  }
-
-  function stopWaveform() {
-    if (waveTicker) clearInterval(waveTicker)
-    waveTicker = null
-    waveHeights = Array(16).fill(15)
-  }
 
   async function start() {
     feed = []
@@ -97,7 +83,6 @@
           onStarted: (id) => {
             sessionId = id
             toast.success('Live session started — speak into the mic')
-            startWaveform()
           },
           onMetrics: (m) => {
             totalCost = m.total_cost_usd
@@ -140,7 +125,6 @@
     client = null
     if (ticker) clearInterval(ticker)
     ticker = null
-    stopWaveform()
   }
 
   function stop(notify = true) {
@@ -155,11 +139,6 @@
     muted = !muted
     if (mic) {
       mic.muted = muted
-      if (muted) {
-        stopWaveform()
-      } else {
-        startWaveform()
-      }
     }
   }
 
@@ -277,32 +256,25 @@
     <div class="flex flex-col gap-6 lg:col-span-2">
       
       <!-- Audio Visualizer Card -->
-      <Card.Root class="glass glow-hover flex flex-col justify-between">
-        <Card.Header>
+      <Card.Root class="glass glow-hover flex flex-col items-center">
+        <Card.Header class="w-full">
           <Card.Title>Live audio wave</Card.Title>
           <Card.Description>Visual feedback of microphone input streaming to Gemini.</Card.Description>
         </Card.Header>
-        <Card.Content class="flex items-center justify-center min-h-[110px] pb-6">
-          {#if running && !muted}
-            <div class="flex items-end justify-center gap-1.5 h-14 w-full max-w-xs px-4">
-              {#each waveHeights as h, idx}
-                <div 
-                  class="w-2 bg-primary rounded-full transition-all duration-100 ease-out"
-                  style="height: {h}%; box-shadow: 0 0 12px var(--primary);"
-                ></div>
-              {/each}
-            </div>
-          {:else}
-            <p class="text-sm text-muted-foreground flex items-center gap-2">
-              {#if running && muted}
-                <span class="size-2 rounded-full bg-amber-500 animate-ping"></span>
-                <span class="text-amber-400 font-semibold">Microphone Muted</span>
-              {:else}
-                <span class="size-2 rounded-full bg-muted-foreground"></span>
-                <span>Session inactive</span>
-              {/if}
-            </p>
-          {/if}
+        <Card.Content class="flex flex-col items-center gap-3 pb-6">
+          <AuraVisualizer
+            state={running && muted ? 'muted' : running ? 'speaking' : 'idle'}
+            size={180}
+          />
+          <p class="text-xs text-muted-foreground">
+            {#if running && muted}
+              <span class="text-amber-400 font-semibold">Microphone muted</span>
+            {:else if running}
+              <span class="text-cyan-400 font-semibold">Streaming to Gemini</span>
+            {:else}
+              <span>Session inactive</span>
+            {/if}
+          </p>
         </Card.Content>
       </Card.Root>
 
