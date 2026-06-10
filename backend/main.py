@@ -7,7 +7,6 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
-import google.genai as genai
 from google.genai import types as gtypes
 
 from backend.config import load_config
