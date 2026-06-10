@@ -87,6 +87,8 @@ class MetricsStore:
             db.row_factory = aiosqlite.Row
             async with db.execute("SELECT * FROM sessions WHERE id = ?", (session_id,)) as cur:
                 row = await cur.fetchone()
+        if row is None:
+            raise KeyError(f"Session not found: {session_id}")
         return SessionRecord(
             id=row["id"],
             mode=row["mode"],
