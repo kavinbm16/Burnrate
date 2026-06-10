@@ -7,16 +7,18 @@
   import { Switch } from '$lib/components/ui/switch'
   import { Label } from '$lib/components/ui/label'
   import { Badge } from '$lib/components/ui/badge'
+  import { Slider } from '$lib/components/ui/slider'
   import { AreaChart } from 'layerchart'
   import { LiveClient, type LiveMetrics } from '$lib/ws'
   import { MicCapture, queryMicPermission, type MicPermission } from '$lib/audio/capture'
   import { PcmPlayer } from '$lib/audio/playback'
   import { app } from '$lib/state.svelte'
-  import { usd, duration } from '$lib/format'
+  import { usd, duration, tokens } from '$lib/format'
   import MicIcon from '@lucide/svelte/icons/mic'
   import MicOffIcon from '@lucide/svelte/icons/mic-off'
   import SquareIcon from '@lucide/svelte/icons/square'
   import RadioIcon from '@lucide/svelte/icons/radio'
+  import AlertTriangleIcon from '@lucide/svelte/icons/alert-triangle'
 
   let toolsEnabled = $state(false)
   let headroomEnabled = $state(false)
@@ -29,11 +31,18 @@
   let totalCost = $state(0)
   let feed = $state<LiveMetrics[]>([])
 
+  let budget = $state(0.50)
+  let budgetLimitEnabled = $state(true)
+
   let client: LiveClient | null = null
   let mic: MicCapture | null = null
   let player: PcmPlayer | null = null
   let ticker: ReturnType<typeof setInterval> | null = null
   let micPermission = $state<MicPermission>('unknown')
+
+  // Visualizer height arrays for live waveform simulation
+  let waveHeights = $state<number[]>(Array(16).fill(15))
+  let waveTicker: ReturnType<typeof setInterval> | null = null
 
   onMount(async () => {
     micPermission = await queryMicPermission()
@@ -54,6 +63,18 @@
   const sparkConfig = {
     cumulative: { label: 'Cost', color: 'var(--chart-1)' },
   } satisfies Chart.ChartConfig
+
+  function startWaveform() {
+    waveTicker = setInterval(() => {
+      waveHeights = waveHeights.map(() => Math.floor(15 + Math.random() * 85))
+    }, 100)
+  }
+
+  function stopWaveform() {
+    if (waveTicker) clearInterval(waveTicker)
+    waveTicker = null
+    waveHeights = Array(16).fill(15)
+  }
 
   async function start() {
     feed = []
@@ -76,11 +97,17 @@
           onStarted: (id) => {
             sessionId = id
             toast.success('Live session started — speak into the mic')
+            startWaveform()
           },
           onMetrics: (m) => {
             totalCost = m.total_cost_usd
             feed.unshift(m)
             if (feed.length > 200) feed.pop()
+
+            if (budgetLimitEnabled && totalCost >= budget) {
+              toast.error(`Budget limit of ${usd(budget, 2)} exceeded! Auto-stopping session.`)
+              stop(true)
+            }
           },
           onAudio: (pcm) => player?.play(pcm),
           onError: (message) => {
@@ -113,6 +140,7 @@
     client = null
     if (ticker) clearInterval(ticker)
     ticker = null
+    stopWaveform()
   }
 
   function stop(notify = true) {
@@ -125,7 +153,14 @@
 
   function toggleMute() {
     muted = !muted
-    if (mic) mic.muted = muted
+    if (mic) {
+      mic.muted = muted
+      if (muted) {
+        stopWaveform()
+      } else {
+        startWaveform()
+      }
+    }
   }
 
   onDestroy(() => {
@@ -133,7 +168,7 @@
   })
 </script>
 
-<div class="mx-auto flex max-w-4xl flex-col gap-6">
+<div class="w-full flex flex-col gap-6">
   {#if micPermission === 'denied'}
     <Card.Root class="border-amber-500/40 bg-amber-500/5">
       <Card.Content class="py-4 text-sm">
@@ -148,119 +183,196 @@
     </Card.Root>
   {/if}
 
-  <!-- Controls -->
-  <Card.Root>
-    <Card.Content class="flex flex-wrap items-center justify-between gap-4">
-      <div class="flex items-center gap-8">
-        <div class="flex items-center gap-3">
-          <Switch id="live-tools" bind:checked={toolsEnabled} disabled={running} />
-          <Label for="live-tools" class="cursor-pointer">MCP tools</Label>
+  {#if running && budgetLimitEnabled && totalCost >= budget * 0.8}
+    <Card.Root class="border-amber-500/40 bg-amber-500/10 text-amber-200 animate-pulse glow-primary">
+      <Card.Content class="py-4 text-sm flex items-center gap-3">
+        <AlertTriangleIcon class="size-5 text-amber-500 shrink-0" />
+        <div>
+          <p class="font-semibold">Budget Warning</p>
+          <p class="text-xs text-muted-foreground mt-0.5">
+            Approaching limit: currently at <span class="font-mono text-amber-400 font-bold">{usd(totalCost)}</span> of <span class="font-mono text-amber-400 font-bold">{usd(budget, 2)}</span> ({Math.round(totalCost / budget * 100)}%).
+          </p>
         </div>
-        <div class="flex items-center gap-3">
-          <Switch id="live-headroom" bind:checked={headroomEnabled} disabled={running} />
-          <Label for="live-headroom" class="cursor-pointer">Headroom</Label>
-        </div>
-      </div>
-
-      <div class="flex items-center gap-2">
-        {#if running}
-          <Button variant="outline" onclick={toggleMute}>
-            {#if muted}<MicOffIcon class="size-4" /> Unmute{:else}<MicIcon class="size-4" /> Mute{/if}
-          </Button>
-          <Button variant="destructive" onclick={() => stop()}>
-            <SquareIcon class="size-4" /> End session
-          </Button>
-        {:else}
-          <Button onclick={start}>
-            <MicIcon class="size-4" /> Start live session
-          </Button>
-        {/if}
-      </div>
-    </Card.Content>
-  </Card.Root>
-
-  <!-- Status / gauges -->
-  <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
-    <Card.Root>
-      <Card.Header>
-        <Card.Description class="flex items-center gap-2">
-          {#if running}
-            <RadioIcon class="size-3.5 animate-pulse text-red-500" /> Live
-          {:else}
-            Session
-          {/if}
-        </Card.Description>
-        <Card.Title class="text-2xl tabular-nums">{duration(elapsed)}</Card.Title>
-        {#if sessionId}
-          <Card.Description class="truncate font-mono text-[10px]">{sessionId}</Card.Description>
-        {/if}
-      </Card.Header>
-    </Card.Root>
-    <Card.Root>
-      <Card.Header>
-        <Card.Description>Running total</Card.Description>
-        <Card.Title class="text-2xl tabular-nums">{usd(totalCost)}</Card.Title>
-      </Card.Header>
-    </Card.Root>
-    <Card.Root>
-      <Card.Header>
-        <Card.Description>Burn rate</Card.Description>
-        <Card.Title class="text-2xl tabular-nums">{usd(costPerMin)}/min</Card.Title>
-      </Card.Header>
-    </Card.Root>
-  </div>
-
-  <!-- Cost sparkline -->
-  {#if sparkline.length > 1}
-    <Card.Root>
-      <Card.Header>
-        <Card.Title>Cumulative cost</Card.Title>
-      </Card.Header>
-      <Card.Content>
-        <Chart.Container config={sparkConfig} class="h-36 w-full">
-          <AreaChart
-            data={sparkline}
-            x="turn"
-            y="cumulative"
-            props={{
-              area: { fill: 'var(--color-cumulative)', 'fill-opacity': 0.25 },
-              yAxis: { format: (v: number) => usd(v) },
-            }}
-          />
-        </Chart.Container>
       </Card.Content>
     </Card.Root>
   {/if}
 
-  <!-- Turn feed -->
-  <Card.Root>
-    <Card.Header>
-      <Card.Title>Turn feed</Card.Title>
-      <Card.Description>Per-turn usage from Gemini Live usageMetadata</Card.Description>
-    </Card.Header>
-    <Card.Content>
-      {#if feed.length === 0}
-        <p class="py-6 text-center text-sm text-muted-foreground">
-          {running ? 'Speak — turns will appear here as the model responds.' : 'Start a session to capture turns.'}
-        </p>
-      {:else}
-        <div class="flex max-h-80 flex-col gap-2 overflow-y-auto">
-          {#each feed as m (m.turn_index)}
-            <div class="flex items-center justify-between rounded-md border px-3 py-2 text-sm">
-              <div class="flex items-center gap-3">
-                <Badge variant="secondary" class="font-mono">#{m.turn_index}</Badge>
-                <span class="text-xs text-muted-foreground">
-                  {m.input_tokens} in · {m.output_tokens} out
-                  {#if m.audio_input_sec || m.audio_output_sec}
-                    · {m.audio_input_sec}s mic / {m.audio_output_sec}s audio
-                  {/if}
-                </span>
-              </div>
-              <span class="font-mono text-xs tabular-nums">{usd(m.cost_usd)}</span>
+  <!-- Premium Two Column Dashboard Cockpit Grid -->
+  <div class="grid grid-cols-1 gap-6 lg:grid-cols-5 items-start">
+    
+    <!-- LEFT PANEL: Main Controls & Scrollable Timeline (3/5 width) -->
+    <div class="flex flex-col gap-6 lg:col-span-3">
+      
+      <!-- Session controls -->
+      <Card.Root class="glass glow-primary">
+        <Card.Header>
+          <Card.Title>Live Session Controls</Card.Title>
+          <Card.Description>Configure tools and headroom compression, then start streaming live.</Card.Description>
+        </Card.Header>
+        <Card.Content class="flex flex-wrap items-center justify-between gap-4 py-3">
+          <div class="flex items-center gap-8">
+            <div class="flex items-center gap-3">
+              <Switch id="live-tools" bind:checked={toolsEnabled} disabled={running} />
+              <Label for="live-tools" class="cursor-pointer font-semibold text-sm">MCP tools</Label>
             </div>
-          {/each}
+            <div class="flex items-center gap-3">
+              <Switch id="live-headroom" bind:checked={headroomEnabled} disabled={running} />
+              <Label for="live-headroom" class="cursor-pointer font-semibold text-sm">Headroom</Label>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2">
+            {#if running}
+              <Button variant="outline" onclick={toggleMute}>
+                {#if muted}<MicOffIcon class="size-4 mr-1.5" /> Unmute{:else}<MicIcon class="size-4 mr-1.5" /> Mute{/if}
+              </Button>
+              <Button variant="destructive" onclick={() => stop()}>
+                <SquareIcon class="size-4 mr-1.5" /> End session
+              </Button>
+            {:else}
+              <Button onclick={start} class="glow-primary px-5 py-2.5">
+                <MicIcon class="size-4 mr-1.5" /> Start live session
+              </Button>
+            {/if}
+          </div>
+        </Card.Content>
+      </Card.Root>
+
+      <!-- Scrollable Turn Feed -->
+      <Card.Root class="glass flex-1 flex flex-col min-h-[500px]">
+        <Card.Header>
+          <Card.Title>Real-Time Turn Feed</Card.Title>
+          <Card.Description>Interactive timeline showing Gemini Live token pricing, usage metadata, and stream records.</Card.Description>
+        </Card.Header>
+        <Card.Content class="flex-1 flex flex-col pr-2">
+          {#if feed.length === 0}
+            <div class="flex-grow flex flex-col items-center justify-center py-20 text-sm text-muted-foreground border border-dashed rounded-lg bg-card/10">
+              <RadioIcon class="size-8 text-muted-foreground mb-3 opacity-60 {running && !muted ? 'animate-ping' : ''}" />
+              {running ? 'Speak now — turns will record here as the model answers.' : 'Initialize a live session to display turn metrics.'}
+            </div>
+          {:else}
+            <div class="flex-grow flex flex-col gap-2 max-h-[520px] overflow-y-auto pr-1">
+              {#each feed as m (m.turn_index)}
+                <div class="flex items-center justify-between rounded-lg border px-3.5 py-3 text-sm bg-card/30 hover:bg-card/60 border-border/60 hover:border-primary/30 transition-all duration-200">
+                  <div class="flex items-center gap-3">
+                    <Badge variant="secondary" class="font-mono bg-primary/10 border-primary/20 text-primary">#{m.turn_index}</Badge>
+                    <span class="text-xs text-muted-foreground">
+                      <span class="text-foreground font-semibold">{tokens(m.input_tokens)}</span> in · <span class="text-foreground font-semibold">{tokens(m.output_tokens)}</span> out
+                      {#if m.audio_input_sec || m.audio_output_sec}
+                        · {m.audio_input_sec}s mic / {m.audio_output_sec}s audio
+                      {/if}
+                    </span>
+                  </div>
+                  <span class="font-mono text-xs font-bold tabular-nums text-foreground">{usd(m.cost_usd)}</span>
+                </div>
+              {/each}
+            </div>
+          {/if}
+        </Card.Content>
+      </Card.Root>
+
+    </div>
+
+    <!-- RIGHT PANEL: Analytics & Visual gauges (2/5 width) -->
+    <div class="flex flex-col gap-6 lg:col-span-2">
+      
+      <!-- Audio Visualizer Card -->
+      <Card.Root class="glass glow-hover flex flex-col justify-between">
+        <Card.Header>
+          <Card.Title>Live audio wave</Card.Title>
+          <Card.Description>Visual feedback of microphone input streaming to Gemini.</Card.Description>
+        </Card.Header>
+        <Card.Content class="flex items-center justify-center min-h-[110px] pb-6">
+          {#if running && !muted}
+            <div class="flex items-end justify-center gap-1.5 h-14 w-full max-w-xs px-4">
+              {#each waveHeights as h, idx}
+                <div 
+                  class="w-2 bg-primary rounded-full transition-all duration-100 ease-out"
+                  style="height: {h}%; box-shadow: 0 0 12px var(--primary);"
+                ></div>
+              {/each}
+            </div>
+          {:else}
+            <p class="text-sm text-muted-foreground flex items-center gap-2">
+              {#if running && muted}
+                <span class="size-2 rounded-full bg-amber-500 animate-ping"></span>
+                <span class="text-amber-400 font-semibold">Microphone Muted</span>
+              {:else}
+                <span class="size-2 rounded-full bg-muted-foreground"></span>
+                <span>Session inactive</span>
+              {/if}
+            </p>
+          {/if}
+        </Card.Content>
+      </Card.Root>
+
+      <!-- Cost Thresholds -->
+      <Card.Root class="glass glow-hover">
+        <Card.Header>
+          <Card.Title>Budget limits & Safety</Card.Title>
+          <Card.Description>Set a budget ceiling to automatically pause or warn on high token spend.</Card.Description>
+        </Card.Header>
+        <Card.Content class="flex flex-col gap-4">
+          <div class="flex items-center justify-between">
+            <Label for="live-budget" class="font-semibold text-sm">Session Limit</Label>
+            <span class="font-mono text-sm font-bold text-primary text-glow-primary">{usd(budget, 2)}</span>
+          </div>
+          <div class="px-1 py-1">
+            <Slider value={[budget]} onValueChange={(val) => budget = val[0]} min={0.05} max={5.0} step={0.05} disabled={running} />
+          </div>
+          <div class="flex items-center gap-3">
+            <Switch id="budget-auto-stop" bind:checked={budgetLimitEnabled} disabled={running} />
+            <Label for="budget-auto-stop" class="cursor-pointer text-xs text-muted-foreground select-none">
+              Auto-stop session once budget is exceeded
+            </Label>
+          </div>
+        </Card.Content>
+      </Card.Root>
+
+      <!-- Gauges -->
+      <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div class="rounded-xl border p-4 bg-card/40 relative overflow-hidden glass">
+          <div class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Duration</div>
+          <div class="mt-2 text-xl font-bold tabular-nums text-foreground">{duration(elapsed)}</div>
         </div>
+        <div class="rounded-xl border p-4 bg-card/40 relative overflow-hidden glass">
+          <div class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Cost</div>
+          <div class="mt-2 text-xl font-bold tabular-nums text-emerald-400">{usd(totalCost)}</div>
+        </div>
+        <div class="rounded-xl border p-4 bg-card/40 relative overflow-hidden glass">
+          <div class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Latest turn</div>
+          <div class="mt-2 text-xl font-bold tabular-nums text-cyan-400">
+            {#if feed.length > 0}
+              {tokens(feed[0].input_tokens + feed[0].output_tokens)}
+            {:else}
+              0
+            {/if}
+          </div>
+        </div>
+      </div>
+
+      <!-- Cost progression sparkline -->
+      {#if sparkline.length > 1}
+        <Card.Root class="glass flex-grow">
+          <Card.Header>
+            <Card.Title>Session cost accumulation</Card.Title>
+          </Card.Header>
+          <Card.Content>
+            <Chart.Container config={sparkConfig} class="h-32 w-full">
+              <AreaChart
+                data={sparkline}
+                x="turn"
+                y="cumulative"
+                props={{
+                  area: { fill: 'var(--color-cumulative)', 'fill-opacity': 0.15 },
+                  yAxis: { format: (v: number) => usd(v) },
+                }}
+              />
+            </Chart.Container>
+          </Card.Content>
+        </Card.Root>
       {/if}
-    </Card.Content>
-  </Card.Root>
+
+    </div>
+  </div>
 </div>

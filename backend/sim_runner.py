@@ -38,6 +38,7 @@ class SimRunner:
         config: SimConfig,
         on_metrics: Callable[[TurnMetrics], None] | None = None,
         on_progress: Callable[[int, int], None] | None = None,
+        on_session_id: Callable[[str], None] | None = None,
     ) -> SimResult:
         scenario = self.load_scenario(config.scenario_path)
         turns = scenario["turns"] * scenario.get("repeat", 1)
@@ -49,6 +50,8 @@ class SimRunner:
             tools_enabled=config.tools_enabled,
             headroom_enabled=config.headroom_enabled,
         )
+        if on_session_id:
+            on_session_id(session_id)
 
         gemini_session = GeminiSession(
             session_id=session_id,

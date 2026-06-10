@@ -95,6 +95,7 @@ async def list_scenarios():
                     "avg_turn_duration_sec": avg_dur,
                     "repeat": repeat,
                     "estimated_duration_sec": len(turns) * repeat * avg_dur,
+                    "turns": turns,
                 })
             except Exception as e:
                 scenarios.append({"path": str(path), "name": path.stem, "error": str(e)})
@@ -185,8 +186,11 @@ async def start_sim(body: dict):
             _sim_runs[run_id]["progress"] = current
             _sim_runs[run_id]["total"] = total
 
+        def on_session_id(session_id: str):
+            _sim_runs[run_id]["session_id"] = session_id
+
         try:
-            result = await sim_runner.run(sim_config, on_progress=on_progress)
+            result = await sim_runner.run(sim_config, on_progress=on_progress, on_session_id=on_session_id)
             _sim_runs[run_id]["status"] = "done"
             _sim_runs[run_id]["session_id"] = result.session_id
             _sim_runs[run_id]["total_cost_usd"] = result.total_cost_usd

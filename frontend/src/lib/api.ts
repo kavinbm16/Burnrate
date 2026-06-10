@@ -26,6 +26,7 @@ export interface Scenario {
   avg_turn_duration_sec: number
   repeat: number
   estimated_duration_sec: number
+  turns: string[]
   error?: string
 }
 

@@ -3,16 +3,18 @@
   import { ModeWatcher } from 'mode-watcher'
   import { Toaster } from '$lib/components/ui/sonner'
   import { Badge } from '$lib/components/ui/badge'
-  import { Separator } from '$lib/components/ui/separator'
   import { app, type Tab } from '$lib/state.svelte'
   import FlameIcon from '@lucide/svelte/icons/flame'
   import MicIcon from '@lucide/svelte/icons/mic'
   import PlayIcon from '@lucide/svelte/icons/play'
   import ChartColumnIcon from '@lucide/svelte/icons/chart-column'
   import ServerIcon from '@lucide/svelte/icons/server'
+  import CircleDotIcon from '@lucide/svelte/icons/circle-dot'
+  import ActivityIcon from '@lucide/svelte/icons/activity'
   import LiveView from '$lib/views/LiveView.svelte'
   import SimView from '$lib/views/SimView.svelte'
   import AnalyticsView from '$lib/views/AnalyticsView.svelte'
+  import { usd } from '$lib/format'
 
   const navItems: { id: Tab; label: string; icon: typeof MicIcon; hint: string }[] = [
     { id: 'live', label: 'Live', icon: MicIcon, hint: 'Mic session' },
@@ -21,10 +23,13 @@
   ]
 
   const titles: Record<Tab, { title: string; sub: string }> = {
-    live: { title: 'Live Session', sub: 'Microphone → Gemini Live → speaker, with real-time cost' },
-    sim: { title: 'Sim Runner', sub: 'Replay YAML scenarios at full API speed' },
-    analytics: { title: 'Analytics', sub: 'Compare configs, project fleet costs, export' },
+    live: { title: 'Live Session', sub: 'Microphone → Gemini Live → speaker, with real-time cost tracking' },
+    sim: { title: 'Sim Runner', sub: 'Replay YAML scenarios at full API speed and benchmark configs' },
+    analytics: { title: 'Analytics', sub: 'Compare configurations, project fleet costs, and export metrics' },
   }
+
+  const totalSessions = $derived(app.sessions.length)
+  const totalSpend = $derived(app.sessions.reduce((a, s) => a + s.total_cost_usd, 0))
 
   onMount(() => {
     app.loadStatic()
@@ -37,81 +42,122 @@
 
 <div class="flex h-screen overflow-hidden bg-background text-foreground">
   <!-- Sidebar -->
-  <aside class="flex w-60 shrink-0 flex-col border-r bg-sidebar text-sidebar-foreground">
-    <div class="flex items-center gap-2.5 px-5 py-5">
-      <div class="flex size-9 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-        <FlameIcon class="size-5" />
+  <aside class="flex w-56 shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground relative overflow-hidden">
+    <!-- Subtle sidebar top glow -->
+    <div class="absolute top-0 left-0 right-0 h-32 pointer-events-none"
+      style="background: radial-gradient(ellipse at 50% 0%, color-mix(in srgb, var(--primary) 12%, transparent), transparent 70%);">
+    </div>
+
+    <!-- Brand -->
+    <div class="flex items-center gap-3 px-4 py-4 relative z-10">
+      <div class="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-[0_0_18px_var(--primary)]">
+        <FlameIcon class="size-4.5" />
       </div>
       <div>
-        <div class="text-sm font-bold tracking-widest">BURNRATE</div>
-        <div class="text-[11px] text-muted-foreground">Gemini Live cost lab</div>
+        <div class="text-sm font-extrabold tracking-widest text-foreground">BURNRATE</div>
+        <div class="text-[10px] text-muted-foreground font-medium">Gemini Live cost lab</div>
       </div>
     </div>
 
-    <Separator />
+    <!-- Divider -->
+    <div class="h-px bg-sidebar-border mx-4 mb-1"></div>
 
-    <nav class="flex flex-1 flex-col gap-1 p-3">
+    <!-- Nav -->
+    <nav class="flex flex-1 flex-col gap-0.5 p-2 relative z-10">
       {#each navItems as item (item.id)}
         <button
-          class="flex items-center gap-3 rounded-md px-3 py-2.5 text-left text-sm transition-colors
+          class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm transition-all duration-200 group relative
             {app.tab === item.id
-              ? 'bg-sidebar-accent font-medium text-sidebar-accent-foreground'
-              : 'text-muted-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground'}"
+              ? 'bg-primary/10 text-primary font-semibold shadow-[inset_0_0_0_1px_color-mix(in_srgb,var(--primary)_20%,transparent)]'
+              : 'text-muted-foreground hover:bg-sidebar-accent/60 hover:text-foreground'}"
           onclick={() => (app.tab = item.id)}
         >
-          <item.icon class="size-4" />
-          <span class="flex-1">{item.label}</span>
-          <span class="text-[10px] text-muted-foreground">{item.hint}</span>
+          {#if app.tab === item.id}
+            <div class="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-primary rounded-full shadow-[0_0_8px_var(--primary)]"></div>
+          {/if}
+          <item.icon class="size-4 shrink-0 {app.tab === item.id ? 'text-primary' : ''}" />
+          <span class="flex-1 text-[13px]">{item.label}</span>
+          <span class="text-[9px] text-muted-foreground font-medium hidden group-hover:block {app.tab === item.id ? 'block opacity-60' : ''}">{item.hint}</span>
         </button>
       {/each}
     </nav>
 
-    <Separator />
+    <!-- Divider -->
+    <div class="h-px bg-sidebar-border mx-4"></div>
 
-    <div class="space-y-2 p-4 text-xs text-muted-foreground">
-      {#if app.config}
-        <div class="flex items-center gap-2 truncate">
-          <span class="size-1.5 shrink-0 rounded-full {app.backendUp ? 'bg-emerald-500' : 'bg-red-500'}"></span>
-          <span class="truncate font-mono">{app.config.model}</span>
+    <!-- Session summary mini-stats -->
+    {#if app.sessions.length > 0}
+      <div class="px-4 py-3 relative z-10">
+        <div class="rounded-xl border border-border/40 bg-card/30 p-3 flex flex-col gap-2">
+          <div class="flex items-center justify-between text-[11px]">
+            <span class="text-muted-foreground flex items-center gap-1.5">
+              <ActivityIcon class="size-3" />
+              Sessions
+            </span>
+            <span class="font-bold text-foreground tabular-nums">{totalSessions}</span>
+          </div>
+          <div class="flex items-center justify-between text-[11px]">
+            <span class="text-muted-foreground flex items-center gap-1.5">
+              <span class="size-1.5 rounded-full bg-emerald-400"></span>
+              Total spend
+            </span>
+            <span class="font-bold text-emerald-400 tabular-nums font-mono">{usd(totalSpend)}</span>
+          </div>
         </div>
-        <div class="flex items-center gap-2">
-          <ServerIcon class="size-3" />
-          {app.config.mcp_servers.length} MCP server{app.config.mcp_servers.length === 1 ? '' : 's'} configured
+      </div>
+
+      <div class="h-px bg-sidebar-border mx-4"></div>
+    {/if}
+
+    <!-- Model & MCP status -->
+    <div class="p-3 text-xs relative z-10">
+      {#if app.config}
+        <div class="flex flex-col gap-1.5 px-1">
+          <div class="flex items-center gap-2 min-w-0">
+            <span class="size-1.5 shrink-0 rounded-full {app.backendUp ? 'bg-emerald-400 shadow-[0_0_6px_rgb(52,211,153)]' : 'bg-red-400'}"></span>
+            <span class="truncate font-mono text-[10px] text-muted-foreground">{app.config.model}</span>
+          </div>
+          <div class="flex items-center gap-1.5 text-muted-foreground">
+            <ServerIcon class="size-3 shrink-0" />
+            <span class="text-[10px]">{app.config.mcp_servers.length} MCP server{app.config.mcp_servers.length === 1 ? '' : 's'}</span>
+          </div>
         </div>
       {:else}
-        <div class="flex items-center gap-2">
-          <span class="size-1.5 rounded-full bg-red-500"></span>
-          backend unreachable
+        <div class="flex items-center gap-2 px-1">
+          <span class="size-1.5 rounded-full bg-red-400"></span>
+          <span class="text-[10px] text-muted-foreground">backend unreachable</span>
         </div>
       {/if}
     </div>
   </aside>
 
   <!-- Main -->
-  <div class="flex min-w-0 flex-1 flex-col">
-    <header class="flex items-center justify-between border-b px-6 py-4">
+  <div class="flex min-w-0 flex-1 flex-col overflow-hidden">
+    <!-- Header -->
+    <header class="flex shrink-0 items-center justify-between border-b border-border/50 px-6 py-3.5 bg-background/60 backdrop-blur-sm">
       <div>
-        <h1 class="text-lg font-semibold">{titles[app.tab].title}</h1>
-        <p class="text-xs text-muted-foreground">{titles[app.tab].sub}</p>
+        <h1 class="text-base font-bold text-foreground">{titles[app.tab].title}</h1>
+        <p class="text-[11px] text-muted-foreground mt-0.5">{titles[app.tab].sub}</p>
       </div>
       {#if app.config}
-        <div class="flex items-center gap-1.5">
-          <Badge variant="outline" class="font-mono text-[10px]">
-            audio in ${app.config.pricing.audio_input_per_min}/min
+        <div class="flex flex-wrap items-center gap-1.5">
+          <Badge variant="outline" class="font-mono text-[9px] h-5 bg-primary/5 border-primary/20 text-primary">
+            🎤 ${app.config.pricing.audio_input_per_min}/min
           </Badge>
-          <Badge variant="outline" class="font-mono text-[10px]">
-            audio out ${app.config.pricing.audio_output_per_min}/min
+          <Badge variant="outline" class="font-mono text-[9px] h-5 bg-primary/5 border-primary/20 text-primary">
+            🔊 ${app.config.pricing.audio_output_per_min}/min
           </Badge>
-          <Badge variant="outline" class="font-mono text-[10px]">
-            txt in ${app.config.pricing.text_input_per_mtok}/Mtok
+          <Badge variant="outline" class="font-mono text-[9px] h-5 border-border/50 text-muted-foreground">
+            txt ${app.config.pricing.text_input_per_mtok}/M in
           </Badge>
-          <Badge variant="outline" class="font-mono text-[10px]">
-            txt out ${app.config.pricing.text_output_per_mtok}/Mtok
+          <Badge variant="outline" class="font-mono text-[9px] h-5 border-border/50 text-muted-foreground">
+            txt ${app.config.pricing.text_output_per_mtok}/M out
           </Badge>
         </div>
       {/if}
     </header>
 
+    <!-- Content -->
     <main class="flex-1 overflow-y-auto p-6">
       {#if app.tab === 'live'}
         <LiveView />
