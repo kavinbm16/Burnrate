@@ -139,6 +139,13 @@ class MetricsStore:
             for r in rows
         ]
 
+    async def delete_session(self, session_id: str) -> bool:
+        async with aiosqlite.connect(self._path) as db:
+            await db.execute("DELETE FROM turns WHERE session_id = ?", (session_id,))
+            cur = await db.execute("DELETE FROM sessions WHERE id = ?", (session_id,))
+            await db.commit()
+            return cur.rowcount > 0
+
     async def finalize_session(self, session_id: str, duration_seconds: float, total_cost_usd: float) -> None:
         async with aiosqlite.connect(self._path) as db:
             await db.execute(

@@ -30,6 +30,8 @@ class GeminiSession:
     tools_enabled: bool
     headroom_enabled: bool
     tool_definitions: list[dict] = field(default_factory=list)
+    history: list[dict] = field(default_factory=list)  # OpenAI-format messages for headroom
+    tokens_saved_by_headroom: int = 0
     _turn_index: int = 0
     _session_start: float = field(default_factory=time.time)
 
@@ -61,14 +63,31 @@ class GeminiWrapper:
             tools=tools if tools else None,
         )
 
-    def _compress_if_enabled(self, session: GeminiSession, messages: list) -> list:
+    def _compress_if_enabled(self, session: GeminiSession, messages: list[dict]) -> list[dict]:
+        """Compress conversation messages via headroom-ai before sending.
+
+        Returns the (possibly compressed) message list and accumulates token
+        savings on the session. Falls back to the original messages if the
+        library is unavailable or compression fails.
+        """
         if not session.headroom_enabled:
             return messages
         try:
             from headroom import compress
-            return compress(messages)
-        except (ImportError, AttributeError):
-            print("[GeminiWrapper] headroom compress not available, skipping compression")
+
+            result = compress(messages)
+            session.tokens_saved_by_headroom += result.tokens_saved
+            if result.tokens_saved > 0:
+                print(
+                    f"[GeminiWrapper] headroom: {result.tokens_before} → {result.tokens_after} tokens "
+                    f"(saved {result.tokens_saved}, transforms: {result.transforms_applied})"
+                )
+            return result.messages
+        except ImportError:
+            print("[GeminiWrapper] headroom-ai not installed, skipping compression")
+            return messages
+        except Exception as e:
+            print(f"[GeminiWrapper] headroom compression failed, sending uncompressed: {e}")
             return messages
 
     async def _record_turn(
@@ -127,8 +146,24 @@ class GeminiWrapper:
         live_session: object,
         on_metrics: Callable[[TurnMetrics], None] | None = None,
     ) -> str:
-        """Send one text turn, collect response, record metrics."""
-        await live_session.send(input=text, end_of_turn=True)
+        """Send one text turn, collect response, record metrics.
+
+        With headroom enabled, the running conversation history is compressed
+        before each send and the compressed form of the new user turn is what
+        goes over the wire. (Gemini Live keeps its own server-side context;
+        compression reduces the client-supplied content per turn — the same
+        place tool outputs and injected context would be compressed in CC.)
+        """
+        session.history.append({"role": "user", "content": text})
+        outgoing = text
+        if session.headroom_enabled:
+            compressed = self._compress_if_enabled(session, session.history)
+            session.history = list(compressed)
+            last = session.history[-1] if session.history else None
+            if last and last.get("role") == "user" and isinstance(last.get("content"), str):
+                outgoing = last["content"]
+
+        await live_session.send(input=outgoing, end_of_turn=True)
 
         response_text = ""
         usage = None
@@ -142,6 +177,7 @@ class GeminiWrapper:
             if msg.server_content and msg.server_content.turn_complete:
                 break
 
+        session.history.append({"role": "assistant", "content": response_text})
         await self._record_turn(session, usage, 0.0, 0.0, on_metrics)
         return response_text
 

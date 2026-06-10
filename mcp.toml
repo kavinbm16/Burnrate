@@ -1,6 +1,6 @@
+# API key lives in .env as GEMINI_API — do not put secrets in this file.
 [gemini]
-api_key = "YOUR_GEMINI_API_KEY"
-model   = "gemini-3.1-flash-live-preview"
+model = "gemini-3.1-flash-live-preview"
 
 [pricing]
 audio_input_per_min   = 0.005

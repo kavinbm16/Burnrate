@@ -146,6 +146,15 @@ text_output_per_mtok  = 4.50
 # args    = ["-y", "@modelcontextprotocol/server-filesystem", "/tmp"]
 ```
 
+### Build the dashboard
+
+```bash
+cd frontend
+npm install
+npm run build   # outputs to frontend/dist, served by FastAPI
+cd ..
+```
+
 ### Run
 
 ```bash
@@ -153,6 +162,12 @@ uvicorn backend.main:app --reload --port 8000
 ```
 
 Open [http://localhost:8000](http://localhost:8000) for the dashboard.
+
+For frontend development with hot reload, run the Vite dev server alongside uvicorn (it proxies `/api` and `/ws` to :8000):
+
+```bash
+cd frontend && npm run dev   # http://localhost:5173
+```
 
 ### First sim run (API)
 
@@ -206,6 +221,10 @@ repeat: 16   # multiply turns to target duration (e.g. 8-hour workday)
 | `GET` | `/api/sessions` | List all benchmark sessions |
 | `GET` | `/api/sessions/{id}/turns` | Turn-level token breakdown |
 | `GET` | `/api/comparison` | Comparison matrix for analytics |
+| `GET` | `/api/config` | Model, pricing, and MCP server info |
+| `GET` | `/api/scenarios` | Available scenario files with metadata |
+| `GET` | `/api/sessions/{id}/projection` | Daily/monthly/fleet cost extrapolation (`hours_per_day`, `robots`) |
+| `DELETE` | `/api/sessions/{id}` | Delete a session and its turns |
 | `POST` | `/api/sim/run` | Start a scenario sim (`scenario_path`, `tools_enabled`, `headroom_enabled`) |
 | `GET` | `/api/sim/status/{run_id}` | Sim progress and result |
 | `GET` | `/api/export/csv` | Download sessions as CSV |
@@ -238,7 +257,12 @@ burnrate/
 │   ├── cost_calculator.py    # Per-turn and extrapolated pricing
 │   ├── metrics_store.py      # SQLite sessions + turns
 │   └── report_exporter.py    # CSV, JSON, comparison matrix
-├── frontend/                 # Dashboard (Live · Sim · Analytics tabs)
+├── frontend/                 # Svelte 5 dashboard (Live · Sim · Analytics)
+│   ├── src/App.svelte        # Shell: sidebar + tabs
+│   ├── src/lib/api.ts        # Typed REST client
+│   ├── src/lib/ws.ts         # Live WebSocket client
+│   ├── src/lib/audio/        # AudioWorklet mic capture + PCM playback
+│   └── src/lib/views/        # LiveView · SimView · AnalyticsView
 └── tests/
 ```
 
@@ -269,7 +293,7 @@ pytest tests/ -v
 | Context | `headroom` — optional message compression |
 | Tools | `mcp` — Model Context Protocol servers |
 | Storage | SQLite via `aiosqlite` |
-| Frontend | Vanilla HTML/JS + Chart.js |
+| Frontend | Svelte 5 + Vite + Tailwind v4 + shadcn-svelte + LayerChart |
 
 ---
 
