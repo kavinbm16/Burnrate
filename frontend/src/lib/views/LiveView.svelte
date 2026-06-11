@@ -47,6 +47,19 @@
   })
 
   const costPerMin = $derived(elapsed > 10 ? totalCost / (elapsed / 60) : 0)
+  const costPerHour = $derived(costPerMin * 60)
+  const costBreakdown = $derived.by(() => {
+    let audio_input = 0, audio_output = 0, text_input = 0, text_output = 0
+    for (const m of feed) {
+      if (m.cost_breakdown) {
+        audio_input += m.cost_breakdown.audio_input_usd
+        audio_output += m.cost_breakdown.audio_output_usd
+        text_input += m.cost_breakdown.text_input_usd
+        text_output += m.cost_breakdown.text_output_usd
+      }
+    }
+    return { audio_input, audio_output, text_input, text_output }
+  })
   const sparkline = $derived.by(() => {
     let acc = 0
     return feed
@@ -306,26 +319,92 @@
       </Card.Root>
 
       <!-- Gauges -->
-      <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div class="console-panel p-4">
           <div class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Duration</div>
           <div class="mt-2 text-xl font-bold tabular-nums text-foreground">{duration(elapsed)}</div>
         </div>
         <div class="console-panel p-4">
-          <div class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Cost</div>
+          <div class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Session Cost</div>
           <div class="mt-2 text-xl font-bold tabular-nums text-emerald-400">{usd(totalCost)}</div>
         </div>
-        <div class="console-panel p-4">
-          <div class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Latest turn</div>
-          <div class="mt-2 text-xl font-bold tabular-nums text-cyan-400">
-            {#if feed.length > 0}
-              {tokens(feed[0].input_tokens + feed[0].output_tokens)}
-            {:else}
-              0
-            {/if}
-          </div>
+        <div class="console-panel p-4 col-span-1 sm:col-span-2">
+          <div class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Burn Rate</div>
+          <div class="mt-2 text-xl font-bold tabular-nums text-orange-400">{usd(costPerHour, 2)}/hour</div>
+          <div class="mt-1 text-xs text-muted-foreground">{usd(costPerMin, 4)}/min</div>
         </div>
       </div>
+
+      <!-- Cost Breakdown -->
+      {#if feed.length > 0}
+        <Card.Root class="console-panel">
+          <Card.Header>
+            <div class="data-label">Cost Composition</div>
+            <Card.Title>Where the $ goes</Card.Title>
+          </Card.Header>
+          <Card.Content class="space-y-4">
+            <div class="space-y-2 text-sm">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <div class="size-2 rounded-full bg-blue-500"></div>
+                  <span class="text-muted-foreground">Audio Input</span>
+                </div>
+                <span class="font-mono font-bold">{usd(costBreakdown.audio_input)}</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <div class="size-2 rounded-full bg-cyan-500"></div>
+                  <span class="text-muted-foreground">Audio Output</span>
+                </div>
+                <span class="font-mono font-bold">{usd(costBreakdown.audio_output)}</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <div class="size-2 rounded-full bg-amber-500"></div>
+                  <span class="text-muted-foreground">Text Input</span>
+                </div>
+                <span class="font-mono font-bold">{usd(costBreakdown.text_input)}</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <div class="size-2 rounded-full bg-rose-500"></div>
+                  <span class="text-muted-foreground">Text Output</span>
+                </div>
+                <span class="font-mono font-bold">{usd(costBreakdown.text_output)}</span>
+              </div>
+            </div>
+            <!-- Stacked bar -->
+            {#if totalCost > 0}
+              <div class="mt-4 h-2 rounded-full flex overflow-hidden bg-card/50 border border-border/50">
+                {#if costBreakdown.audio_input > 0}
+                  <div
+                    class="bg-blue-500/80"
+                    style="width: {100 * costBreakdown.audio_input / totalCost}%"
+                  ></div>
+                {/if}
+                {#if costBreakdown.audio_output > 0}
+                  <div
+                    class="bg-cyan-500/80"
+                    style="width: {100 * costBreakdown.audio_output / totalCost}%"
+                  ></div>
+                {/if}
+                {#if costBreakdown.text_input > 0}
+                  <div
+                    class="bg-amber-500/80"
+                    style="width: {100 * costBreakdown.text_input / totalCost}%"
+                  ></div>
+                {/if}
+                {#if costBreakdown.text_output > 0}
+                  <div
+                    class="bg-rose-500/80"
+                    style="width: {100 * costBreakdown.text_output / totalCost}%"
+                  ></div>
+                {/if}
+              </div>
+            {/if}
+          </Card.Content>
+        </Card.Root>
+      {/if}
 
       <!-- Cost progression sparkline -->
       {#if sparkline.length > 1}

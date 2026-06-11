@@ -9,6 +9,14 @@ export interface LiveMetrics {
   audio_output_sec: number
   cost_usd: number
   total_cost_usd: number
+  cost_breakdown?: {
+    audio_input_usd: number
+    audio_output_usd: number
+    text_input_usd: number
+    text_output_usd: number
+  }
+  cost_rate_per_hour_usd?: number
+  elapsed_seconds?: number
 }
 
 export interface LiveClientHandlers {
@@ -31,30 +39,37 @@ export class LiveClient {
     this.ws.binaryType = 'arraybuffer'
 
     return new Promise((resolve, reject) => {
-      this.ws!.onopen = () => {
+      if (!this.ws) {
+        reject(new Error('WebSocket failed to initialize'))
+        return
+      }
+
+      this.ws.onopen = () => {
         this.ws?.send(JSON.stringify(opts))
         resolve()
       }
-      this.ws!.onerror = () => {
+
+      this.ws.onerror = () => {
         handlers.onError?.('WebSocket connection error')
         reject(new Error('WebSocket connection error'))
       }
 
-    this.ws.onmessage = (ev) => {
-      if (ev.data instanceof ArrayBuffer) {
-        handlers.onAudio?.(ev.data)
-        return
+      this.ws.onmessage = (ev) => {
+        if (ev.data instanceof ArrayBuffer) {
+          handlers.onAudio?.(ev.data)
+          return
+        }
+        try {
+          const msg = JSON.parse(ev.data) as Record<string, unknown>
+          if (msg?.type === 'session_started') handlers.onStarted?.(msg.session_id as string)
+          else if (msg?.type === 'metrics') handlers.onMetrics?.(msg as LiveMetrics)
+          else if (msg?.type === 'error') handlers.onError?.((msg.message as string) ?? 'Unknown error')
+        } catch {
+          // ignore malformed frames
+        }
       }
-      try {
-        const msg = JSON.parse(ev.data)
-        if (msg.type === 'session_started') handlers.onStarted?.(msg.session_id)
-        else if (msg.type === 'metrics') handlers.onMetrics?.(msg as LiveMetrics)
-        else if (msg.type === 'error') handlers.onError?.(msg.message ?? 'Unknown error')
-      } catch {
-        // ignore malformed frames
-      }
-    }
-    this.ws.onclose = () => handlers.onClose?.()
+
+      this.ws.onclose = () => handlers.onClose?.()
     })
   }
 
