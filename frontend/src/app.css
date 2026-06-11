@@ -119,7 +119,7 @@
   }
   body {
     @apply bg-background text-foreground;
-    font-size: 100%;
+    font-size: 115%;
     background-image:
       linear-gradient(rgba(255, 138, 31, 0.035) 1px, transparent 1px),
       linear-gradient(90deg, rgba(34, 211, 238, 0.026) 1px, transparent 1px),
@@ -260,4 +260,22 @@
     radial-gradient(circle at 50% 40%, color-mix(in srgb, var(--chart-2) 12%, transparent), transparent 38%),
     radial-gradient(circle at 50% 60%, color-mix(in srgb, var(--chart-4) 9%, transparent), transparent 40%),
     color-mix(in srgb, var(--card) 90%, black 10%);
+}
+
+@utility sidebar-panel {
+  position: relative;
+  border: 1px solid color-mix(in srgb, var(--sidebar-border) 48%, transparent);
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--sidebar-primary) 6%, transparent) 0%, transparent 40%),
+    color-mix(in srgb, var(--sidebar) 95%, transparent);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 8px 32px rgba(0, 0, 0, 0.24);
+  transition: all 0.2s ease;
+  &:hover {
+    border-color: color-mix(in srgb, var(--sidebar-border) 64%, transparent);
+    background:
+      linear-gradient(135deg, color-mix(in srgb, var(--sidebar-primary) 8%, transparent) 0%, transparent 40%),
+      color-mix(in srgb, var(--sidebar) 96%, transparent);
+  }
 }
