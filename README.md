@@ -107,6 +107,48 @@ Rates are configurable in `mcp.toml` — update when Gemini pricing changes.
 
 ---
 
+## How costs are calculated (Live mode)
+
+Audio in a live session is billed on **two independent line items**: duration + tokens.
+
+```
+USER SPEAKS (10 seconds of audio)
+         ↓
+   [PCM Audio Bytes]
+         ↓
+  16 kHz, 16-bit mono
+  = 32,000 bytes/sec × 10 = 320,000 bytes
+         ↓
+Send to Gemini Live API
+         ↓
+   [GEMINI PROCESSES]
+   ├─ Transcribes audio → text
+   ├─ Processes: system_instruction + transcribed_text + context
+   └─ Generates response
+         ↓
+[RESPONSE + usage_metadata]
+├─ prompt_token_count = 150 tokens (from transcribed audio)
+├─ candidates_token_count = 85 tokens (output)
+└─ Response audio (if audio mode)
+         ↓
+   [COST CALCULATION]
+   
+   Audio input cost:  (10 sec / 60) × $0.005/min = $0.00083
+   Text input cost:   (150 tokens / 1M) × $0.75 = $0.0001125
+   ────────────────────────────────────────────────
+   Total input cost:  $0.0009425  ← BOTH charges apply
+```
+
+**Key insight**: Gemini bills separately for:
+1. **Audio duration** — per minute (streaming rate)
+2. **Text tokens** — per million (transcribed content)
+
+They are **not double-billing**. Audio duration + transcribed tokens are independent cost drivers.
+
+Example: Silence (10 sec, 0 tokens) costs $0.00083. Short utterance (2 sec, 300 tokens) costs $0.00017 + $0.000225 = $0.000395.
+
+---
+
 ## Quick start
 
 ### Prerequisites
