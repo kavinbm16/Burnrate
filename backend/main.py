@@ -152,6 +152,103 @@ async def get_comparison():
     return matrix
 
 
+@app.get("/api/analytics/config-comparison")
+async def get_config_comparison():
+    """Compare costs across tool/headroom configurations with deltas."""
+    sessions = await store.list_sessions()
+
+    configs = {}
+    for session in sessions:
+        key = (session.tools_enabled, session.headroom_enabled)
+        if key not in configs:
+            configs[key] = []
+        configs[key].append(session)
+
+    result = []
+    baseline_cost = None
+
+    for (tools, headroom), session_list in sorted(configs.items()):
+        if not session_list:
+            continue
+
+        avg_cost = sum(s.total_cost_usd for s in session_list) / len(session_list)
+        avg_duration = sum(s.duration_seconds for s in session_list) / len(session_list)
+        cost_per_hour = (avg_cost / max(avg_duration / 3600, 0.0001))
+
+        config_name = "Baseline"
+        if tools and not headroom:
+            config_name = "Tools only"
+        elif headroom and not tools:
+            config_name = "Headroom only"
+        elif tools and headroom:
+            config_name = "Full stack"
+
+        if baseline_cost is None:
+            baseline_cost = cost_per_hour
+            delta_pct = 0.0
+        else:
+            delta_pct = 100 * (cost_per_hour - baseline_cost) / baseline_cost
+
+        result.append({
+            "config": config_name,
+            "tools_enabled": tools,
+            "headroom_enabled": headroom,
+            "sessions_count": len(session_list),
+            "avg_cost_usd": round(avg_cost, 6),
+            "avg_duration_sec": round(avg_duration, 1),
+            "cost_per_hour_usd": round(cost_per_hour, 4),
+            "delta_vs_baseline_pct": round(delta_pct, 1),
+        })
+
+    return {"comparison": result, "baseline_config": "Baseline"}
+
+
+@app.get("/api/sessions/{session_id}/breakdown")
+async def get_cost_breakdown(session_id: str):
+    try:
+        session = await store.get_session(session_id)
+        turns = await store.get_turns(session_id)
+    except KeyError:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    audio_input_total = 0.0
+    audio_output_total = 0.0
+    text_input_total = 0.0
+    text_output_total = 0.0
+
+    for turn in turns:
+        audio_duration = turn.audio_duration_seconds
+        input_text = turn.input_text_tokens
+        output_text = turn.output_text_tokens
+
+        audio_in = (audio_duration * 0.5 / 60) * config.pricing.audio_input_per_min
+        audio_out = (audio_duration * 0.5 / 60) * config.pricing.audio_output_per_min
+        text_in = (input_text / 1_000_000) * config.pricing.text_input_per_mtok
+        text_out = (output_text / 1_000_000) * config.pricing.text_output_per_mtok
+
+        audio_input_total += audio_in
+        audio_output_total += audio_out
+        text_input_total += text_in
+        text_output_total += text_out
+
+    return {
+        "session_id": session_id,
+        "total_cost_usd": session.total_cost_usd,
+        "breakdown": {
+            "audio_input_usd": round(audio_input_total, 6),
+            "audio_output_usd": round(audio_output_total, 6),
+            "text_input_usd": round(text_input_total, 6),
+            "text_output_usd": round(text_output_total, 6),
+        },
+        "breakdown_pct": {
+            "audio_input_pct": round(100 * audio_input_total / max(session.total_cost_usd, 0.0001), 1),
+            "audio_output_pct": round(100 * audio_output_total / max(session.total_cost_usd, 0.0001), 1),
+            "text_input_pct": round(100 * text_input_total / max(session.total_cost_usd, 0.0001), 1),
+            "text_output_pct": round(100 * text_output_total / max(session.total_cost_usd, 0.0001), 1),
+        },
+    }
+
+
 # ── REST: Sim ───────────────────────────────────────────────────────────────
 @app.post("/api/sim/run")
 async def start_sim(body: dict):
