@@ -267,13 +267,13 @@ async def live_audio(websocket: WebSocket):
         input_tokens = getattr(usage, "prompt_token_count", 0) or 0
         output_tokens = getattr(usage, "candidates_token_count", 0) or 0
 
-        # prompt_token_count from Gemini Live includes audio tokens — already billed
-        # via byte-derived audio_in_sec/audio_out_sec at audio rate.  Pass text
-        # tokens as 0 to avoid charging audio a second time at the text rate.
+        # Gemini Live charges separately for audio duration and tokens.
+        # prompt_token_count = input tokens (audio encoded + text + system)
+        # candidates_token_count = output tokens
         cost = calculate_turn_cost(
             config.pricing,
-            input_text_tokens=0,
-            output_text_tokens=0,
+            input_text_tokens=input_tokens,
+            output_text_tokens=output_tokens,
             tool_call_tokens=0,
             audio_input_duration_sec=audio_in_sec,
             audio_output_duration_sec=audio_out_sec,

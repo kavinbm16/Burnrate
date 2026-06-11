@@ -3,10 +3,12 @@
 model = "gemini-3.1-flash-live-preview"
 
 [pricing]
-audio_input_per_min   = 0.005
-audio_output_per_min  = 0.018
-text_input_per_mtok   = 0.75
-text_output_per_mtok  = 4.50
+# Gemini 3.1 Flash Live Preview (verified 2026-06-11)
+# Source: https://ai.google.dev/pricing
+audio_input_per_min   = 0.005    # $0.005/min audio input
+audio_output_per_min  = 0.018    # $0.018/min audio output
+text_input_per_mtok   = 0.75     # $0.75 per million input tokens
+text_output_per_mtok  = 4.50     # $4.50 per million output tokens
 
 # Add your MCP servers below. Supports type = "http" or "stdio".
 # [mcp_servers.filesystem]

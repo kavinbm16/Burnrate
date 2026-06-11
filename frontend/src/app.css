@@ -119,6 +119,7 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-size: 100%;
     background-image:
       linear-gradient(rgba(255, 138, 31, 0.035) 1px, transparent 1px),
       linear-gradient(90deg, rgba(34, 211, 238, 0.026) 1px, transparent 1px),
