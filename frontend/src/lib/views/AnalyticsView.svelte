@@ -201,71 +201,85 @@
   })
 </script>
 
-<div class="flex flex-col gap-6">
-  <!-- Stat cards -->
-  <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
-    <Card.Root class="glass glow-hover">
-      <Card.Header>
-        <Card.Description>Benchmark Sessions</Card.Description>
-        <Card.Title class="text-3xl font-bold tracking-tight tabular-nums">{app.sessions.length}</Card.Title>
-      </Card.Header>
+<div class="flex flex-col gap-5">
+  <!-- TOP: Stat cards (4-col) -->
+  <div class="grid grid-cols-2 gap-3 md:grid-cols-4">
+    <Card.Root class="console-panel">
+      <Card.Content class="pt-4">
+        <div class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Sessions</div>
+        <div class="mt-3 text-2xl font-bold tabular-nums text-foreground">{app.sessions.length}</div>
+      </Card.Content>
     </Card.Root>
-    <Card.Root class="glass glow-hover">
-      <Card.Header>
-        <Card.Description>Total Measured Spend</Card.Description>
-        <Card.Title class="text-3xl font-bold tracking-tight tabular-nums text-emerald-400">{usd(totalSpend)}</Card.Title>
-      </Card.Header>
+    <Card.Root class="console-panel">
+      <Card.Content class="pt-4">
+        <div class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Total Spend</div>
+        <div class="mt-3 text-2xl font-bold tabular-nums text-emerald-400">{usd(totalSpend)}</div>
+      </Card.Content>
     </Card.Root>
-    <Card.Root class="glass glow-hover">
-      <Card.Header>
-        <Card.Description>Avg Cost / Hour</Card.Description>
-        <Card.Title class="text-3xl font-bold tracking-tight tabular-nums text-cyan-400">{usd(avgCostPerHour)}</Card.Title>
-      </Card.Header>
+    <Card.Root class="console-panel">
+      <Card.Content class="pt-4">
+        <div class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Avg Cost/Hr</div>
+        <div class="mt-3 text-2xl font-bold tabular-nums text-cyan-400">{usd(avgCostPerHour)}</div>
+      </Card.Content>
+    </Card.Root>
+    <Card.Root class="console-panel">
+      <Card.Content class="pt-4">
+        <div class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Configs</div>
+        <div class="mt-3 text-2xl font-bold tabular-nums text-orange-400">{app.comparison.length}</div>
+      </Card.Content>
     </Card.Root>
   </div>
 
-  <IsometricCityChart
-    sessions={app.sessions}
-    comparison={app.comparison}
-    onDrilldown={(id) => (app.drilldownSessionId = id)}
-  />
+  <!-- MAIN: Visualizations + Insights (2-col) -->
+  <div class="grid grid-cols-1 gap-5 lg:grid-cols-3">
 
-  <!-- Insight cards -->
-  <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-    <Card.Root class="glass glow-hover border-emerald-500/10">
-      <Card.Content class="flex items-center gap-4 py-5">
-        <div class="flex size-11 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.1)]">
-          <TrendingDownIcon class="size-5" />
-        </div>
-        <div>
-          <p class="text-sm font-semibold">
-            {#if headroomSavingsPct != null}
-              Headroom changes cost/hr by {headroomSavingsPct >= 0 ? '−' : '+'}{Math.abs(headroomSavingsPct).toFixed(1)}%
-            {:else}
-              Headroom savings — run configs with & without headroom
-            {/if}
-          </p>
-          <p class="text-xs text-muted-foreground mt-0.5">Matched-pair average across configurations</p>
-        </div>
-      </Card.Content>
-    </Card.Root>
-    <Card.Root class="glass glow-hover border-amber-500/10">
-      <Card.Content class="flex items-center gap-4 py-5">
-        <div class="flex size-11 items-center justify-center rounded-lg bg-amber-500/10 text-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.1)]">
-          <WrenchIcon class="size-5" />
-        </div>
-        <div>
-          <p class="text-sm font-semibold">
-            {#if toolsOverheadPerHour != null}
-              MCP tools add {usd(toolsOverheadPerHour)}/hr per robot
-            {:else}
-              Tool overhead — run configs with & without tools
-            {/if}
-          </p>
-          <p class="text-xs text-muted-foreground mt-0.5">Definitions + call tokens vs baseline</p>
-        </div>
-      </Card.Content>
-    </Card.Root>
+    <!-- Left: IsometricCity -->
+    <div class="lg:col-span-2">
+      <IsometricCityChart
+        sessions={app.sessions}
+        comparison={app.comparison}
+        onDrilldown={(id) => (app.drilldownSessionId = id)}
+      />
+    </div>
+
+    <!-- Right: Insight cards -->
+    <div class="flex flex-col gap-5">
+      <Card.Root class="glass glow-hover border-emerald-500/10">
+        <Card.Content class="flex items-center gap-4 py-5">
+          <div class="flex size-11 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.1)]">
+            <TrendingDownIcon class="size-5" />
+          </div>
+          <div>
+            <p class="text-sm font-semibold">
+              {#if headroomSavingsPct != null}
+                Headroom: {headroomSavingsPct >= 0 ? '−' : '+'}{Math.abs(headroomSavingsPct).toFixed(1)}%
+              {:else}
+                Headroom savings
+              {/if}
+            </p>
+            <p class="text-xs text-muted-foreground mt-0.5">Cost change vs baseline</p>
+          </div>
+        </Card.Content>
+      </Card.Root>
+      <Card.Root class="glass glow-hover border-amber-500/10">
+        <Card.Content class="flex items-center gap-4 py-5">
+          <div class="flex size-11 items-center justify-center rounded-lg bg-amber-500/10 text-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.1)]">
+            <WrenchIcon class="size-5" />
+          </div>
+          <div>
+            <p class="text-sm font-semibold">
+              {#if toolsOverheadPerHour != null}
+                Tools: +{usd(toolsOverheadPerHour)}/hr
+              {:else}
+                Tool overhead
+              {/if}
+            </p>
+            <p class="text-xs text-muted-foreground mt-0.5">Per robot additional cost</p>
+          </div>
+        </Card.Content>
+      </Card.Root>
+    </div>
+
   </div>
 
   <!-- Cost chart -->
@@ -418,49 +432,39 @@
     </Card.Header>
 
     <!-- Filters Cockpit -->
-    <div class="px-6 pt-4 flex flex-wrap items-center gap-3">
-      <div class="flex items-center gap-2 border rounded-lg px-2.5 py-1 bg-card/20 text-xs">
+    <div class="px-6 pt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-2">
+      <div class="flex items-center gap-2 border rounded-lg px-2.5 py-1.5 bg-card/20 text-xs">
         <SearchIcon class="size-3.5 text-muted-foreground" />
-        <input 
-          type="text" 
-          placeholder="Search scenarios..." 
-          bind:value={searchFilter} 
-          class="bg-transparent border-0 outline-none w-32 placeholder:text-muted-foreground text-foreground"
+        <input
+          type="text"
+          placeholder="Search..."
+          bind:value={searchFilter}
+          class="bg-transparent border-0 outline-none w-32 placeholder:text-muted-foreground text-foreground text-sm"
         />
       </div>
 
-      <div class="flex items-center gap-2 border rounded-lg px-2.5 py-1 bg-card/20 text-xs">
-        <span class="text-muted-foreground">Mode:</span>
-        <select bind:value={modeFilter} class="bg-transparent border-0 outline-none text-foreground cursor-pointer font-medium">
-          <option value="all">All Modes</option>
-          <option value="live">Live only</option>
-          <option value="sim">Sim only</option>
-        </select>
-      </div>
+      <select bind:value={modeFilter} class="px-2.5 py-1.5 rounded-lg border bg-card/20 text-xs text-foreground cursor-pointer outline-none">
+        <option value="all">All Modes</option>
+        <option value="live">Live</option>
+        <option value="sim">Sim</option>
+      </select>
 
-      <div class="flex items-center gap-2 border rounded-lg px-2.5 py-1 bg-card/20 text-xs">
-        <span class="text-muted-foreground">Config:</span>
-        <select bind:value={configFilter} class="bg-transparent border-0 outline-none text-foreground cursor-pointer font-medium">
-          <option value="all">All Configs</option>
-          <option value="baseline">Baseline</option>
-          <option value="tools">Tools only</option>
-          <option value="headroom">Headroom only</option>
-          <option value="full">Full stack</option>
-        </select>
-      </div>
+      <select bind:value={configFilter} class="px-2.5 py-1.5 rounded-lg border bg-card/20 text-xs text-foreground cursor-pointer outline-none">
+        <option value="all">All Configs</option>
+        <option value="baseline">Baseline</option>
+        <option value="tools">Tools</option>
+        <option value="headroom">Headroom</option>
+        <option value="full">Full</option>
+      </select>
 
-      <div class="flex items-center gap-2 border rounded-lg px-2.5 py-1 bg-card/20 text-xs ml-auto">
-        <SlidersHorizontalIcon class="size-3.5 text-muted-foreground" />
-        <span class="text-muted-foreground">Sort:</span>
-        <select bind:value={sortBy} class="bg-transparent border-0 outline-none text-foreground cursor-pointer font-medium">
-          <option value="date_desc">Newest First</option>
-          <option value="date_asc">Oldest First</option>
-          <option value="cost_desc">Cost (High-Low)</option>
-          <option value="cost_asc">Cost (Low-High)</option>
-          <option value="duration_desc">Duration (Long-Short)</option>
-          <option value="duration_asc">Duration (Short-Long)</option>
-        </select>
-      </div>
+      <select bind:value={sortBy} class="px-2.5 py-1.5 rounded-lg border bg-card/20 text-xs text-foreground cursor-pointer outline-none sm:ml-auto">
+        <option value="date_desc">Newest</option>
+        <option value="date_asc">Oldest</option>
+        <option value="cost_desc">Cost ↓</option>
+        <option value="cost_asc">Cost ↑</option>
+        <option value="duration_desc">Duration ↓</option>
+        <option value="duration_asc">Duration ↑</option>
+      </select>
     </div>
 
     <Card.Content class="pt-4">
