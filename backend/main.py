@@ -293,6 +293,8 @@ async def live_audio(websocket: WebSocket):
         ))
         state["turn_index"] += 1
 
+        elapsed_sec = gemini_session.elapsed_seconds()
+        cost_rate_per_hour = (state["total_cost"] / elapsed_sec * 3600) if elapsed_sec > 0 else 0
         return {
             "type": "metrics",
             "turn_index": state["turn_index"] - 1,
@@ -301,7 +303,15 @@ async def live_audio(websocket: WebSocket):
             "audio_input_sec": round(audio_in_sec, 2),
             "audio_output_sec": round(audio_out_sec, 2),
             "cost_usd": cost.total_usd,
-            "total_cost_usd": state["total_cost"],
+            "cost_breakdown": {
+                "audio_input_usd": round(cost.audio_input_usd, 6),
+                "audio_output_usd": round(cost.audio_output_usd, 6),
+                "text_input_usd": round(cost.text_input_usd, 6),
+                "text_output_usd": round(cost.text_output_usd, 6),
+            },
+            "total_cost_usd": round(state["total_cost"], 6),
+            "cost_rate_per_hour_usd": round(cost_rate_per_hour, 4),
+            "elapsed_seconds": round(elapsed_sec, 1),
         }
 
     receive_task = None

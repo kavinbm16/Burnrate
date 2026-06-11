@@ -25,6 +25,10 @@ class TurnMetrics:
     audio_input_duration_sec: float
     audio_output_duration_sec: float
     cost_usd: float
+    audio_input_cost_usd: float = 0.0
+    audio_output_cost_usd: float = 0.0
+    text_input_cost_usd: float = 0.0
+    text_output_cost_usd: float = 0.0
 
 
 @dataclass
@@ -157,6 +161,10 @@ class GeminiWrapper:
                 audio_input_duration_sec=audio_input_sec,
                 audio_output_duration_sec=audio_output_sec,
                 cost_usd=cost.total_usd,
+                audio_input_cost_usd=cost.audio_input_usd,
+                audio_output_cost_usd=cost.audio_output_usd,
+                text_input_cost_usd=cost.text_input_usd,
+                text_output_cost_usd=cost.text_output_usd,
             ))
 
         session._turn_index += 1

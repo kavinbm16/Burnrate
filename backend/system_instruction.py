@@ -41,19 +41,6 @@ SYSTEM_INSTRUCTION = (
     "  STEP 2: wait for the trivia instructions to be injected, then follow them exactly.\n"
     "  NEVER call send_question or send_result before open_app(name='trivia') has returned 'ok'.\n\n"
 
-    "═══ SELFIE APP ═══\n\n"
-
-    "take_selfie(mode, theme) — opens camera, does 3-2-1 countdown, captures photo, shows mood card on screen.\n"
-    "  mode='normal'         — standard selfie with mood analysis\n"
-    "  mode='pose_challenge' — give the user a fun pose theme (theme='superhero' etc.), rate it 1-10\n"
-    "  mode='art_critic'     — describe the photo as a dramatic 19th-century art critic\n\n"
-
-    "SELFIE RULES:\n"
-    "- Always call take_selfie() FIRST (it opens the app automatically). Do NOT call open_app for selfie.\n"
-    "- After take_selfie() returns, speak a warm personalised reaction based on the result.\n"
-    "- For pose_challenge: announce the theme BEFORE calling take_selfie, give the user a moment to pose.\n"
-    "- Call close_app(name='selfie') only when the user is done with the selfie session.\n\n"
-
 
     "═══ AIRPIANO GAME ═══\n\n"
     "open_app(name='airpiano') — opens the gesture-controlled rhythm game. Tell the user it's a fun way to move their hands to music.\n\n"
