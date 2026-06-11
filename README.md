@@ -114,38 +114,45 @@ Audio in a live session is billed on **two independent line items**: duration + 
 ```
 USER SPEAKS (10 seconds of audio)
          ↓
-   [PCM Audio Bytes]
+   [PCM Audio Bytes via WebSocket]
+   ├─ Format: 16 kHz, 16-bit mono (no duration metadata)
+   ├─ Bitrate: 16,000 samples/sec × 2 bytes/sample = 32,000 bytes/sec
+   ├─ Total: 320,000 bytes = 10 seconds of audio
+   └─ Why convert bytes→duration? WebSocket only sends raw bytes.
+      Duration not in metadata. Byte count is accurate measure.
          ↓
-  16 kHz, 16-bit mono
-  = 32,000 bytes/sec × 10 = 320,000 bytes
-         ↓
-Send to Gemini Live API
+Send PCM stream to Gemini Live API
          ↓
    [GEMINI PROCESSES]
-   ├─ Transcribes audio → text
+   ├─ Receives raw PCM bytes (16 kHz, 16-bit mono)
+   ├─ Transcribes audio → text internally
    ├─ Processes: system_instruction + transcribed_text + context
    └─ Generates response
          ↓
 [RESPONSE + usage_metadata]
-├─ prompt_token_count = 150 tokens (from transcribed audio)
-├─ candidates_token_count = 85 tokens (output)
-└─ Response audio (if audio mode)
+├─ prompt_token_count = 150 tokens (from transcribed audio + system + context)
+├─ candidates_token_count = 85 tokens (output response)
+└─ Response audio bytes (if audio modality enabled)
          ↓
    [COST CALCULATION]
    
    Audio input cost:  (10 sec / 60) × $0.005/min = $0.00083
    Text input cost:   (150 tokens / 1M) × $0.75 = $0.0001125
    ────────────────────────────────────────────────
-   Total input cost:  $0.0009425  ← BOTH charges apply
+   Total input cost:  $0.0009425  ← BOTH charges apply (not double-billing)
+   
+   Same for output:
+   Audio output cost: (response_duration_sec / 60) × $0.018/min
+   Text output cost:  (85 tokens / 1M) × $4.50
 ```
 
 **Key insight**: Gemini bills separately for:
-1. **Audio duration** — per minute (streaming rate)
-2. **Text tokens** — per million (transcribed content)
+1. **Audio duration** — per minute (streaming bitrate, measured from PCM bytes)
+2. **Text tokens** — per million (transcribed content from usage_metadata)
 
 They are **not double-billing**. Audio duration + transcribed tokens are independent cost drivers.
 
-Example: Silence (10 sec, 0 tokens) costs $0.00083. Short utterance (2 sec, 300 tokens) costs $0.00017 + $0.000225 = $0.000395.
+Example: Silence (10 sec, 0 tokens) = $0.00083. Short utterance (2 sec, 300 tokens) = $0.00017 + $0.000225 = $0.000395.
 
 ---
 
