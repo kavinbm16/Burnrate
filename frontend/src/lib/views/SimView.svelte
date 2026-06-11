@@ -357,7 +357,7 @@
               <p class="font-semibold text-foreground mb-2 uppercase tracking-wider text-[9px]">Sequence</p>
               <div class="flex flex-col gap-3 max-h-40 overflow-y-auto pr-1">
                 {#each selectedScenario.turns as turnPrompt, idx}
-                  <div class="px-2 py-3 rounded bg-card/30 border border-border/40 text-foreground leading-snug hover:bg-card/50 transition-colors">
+                  <div class="px-2 py-2 rounded bg-card/30 border border-border/40 text-foreground leading-snug hover:bg-card/50 transition-colors">
                     <span class="font-mono text-[9px] text-primary"># {idx + 1}</span>
                     <span class="text-[10px] ml-1 break-words block">{turnPrompt}</span>
                   </div>
@@ -367,39 +367,35 @@
           </Card.Content>
         </Card.Root>
       {/if}
-
-      <!-- Config Matrix Guide -->
-      <Card.Root class="console-panel">
-        <Card.Header class="border-b pb-3">
-          <div class="flex items-center gap-2">
-            <InfoIcon class="size-4 text-cyan-400" />
-            <div>
-              <div class="data-label text-xs">Benchmark Guide</div>
-              <Card.Title class="text-base">Matrix configs</Card.Title>
-            </div>
-          </div>
-        </Card.Header>
-        <Card.Content class="pt-3 space-y-2 text-xs">
-          <div class="pb-2 border-b">
-            <Badge variant="outline" class="text-[9px] mb-1">Baseline</Badge>
-            <p class="text-foreground">Raw Gemini Live without optimization.</p>
-          </div>
-          <div class="pb-2 border-b">
-            <Badge variant="outline" class="text-[9px] bg-cyan-500/5 border-cyan-500/20 text-cyan-400 mb-1">Headroom</Badge>
-            <p class="text-foreground">Context compression to reduce input tokens.</p>
-          </div>
-          <div class="pb-2 border-b">
-            <Badge variant="outline" class="text-[9px] mb-1">Tools</Badge>
-            <p class="text-foreground">MCP definitions increase input token count.</p>
-          </div>
-          <div>
-            <Badge variant="default" class="text-[9px] mb-1">Full stack</Badge>
-            <p class="text-foreground">Both tools + headroom compression together.</p>
-          </div>
-        </Card.Content>
-      </Card.Root>
     </div>
 
+  </div>
+
+  <!-- BOTTOM: Horizontal Config Guide -->
+  <div class="flex items-center gap-3 px-4 py-3 rounded-lg border border-border/40 bg-card/30 console-panel">
+    <div class="flex items-center gap-2 shrink-0">
+      <InfoIcon class="size-3.5 text-cyan-400" />
+      <span class="text-[9px] text-muted-foreground uppercase tracking-wide font-semibold">Configs</span>
+    </div>
+    <div class="h-4 w-px bg-border/40"></div>
+    <div class="flex flex-wrap gap-3">
+      <div class="flex items-center gap-2">
+        <Badge variant="outline" class="text-[8px] py-0 h-5">Baseline</Badge>
+        <span class="text-[9px] text-muted-foreground">Raw API</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <Badge variant="outline" class="text-[8px] py-0 h-5 bg-cyan-500/5 border-cyan-500/20 text-cyan-400">Headroom</Badge>
+        <span class="text-[9px] text-muted-foreground">Context ↓</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <Badge variant="outline" class="text-[8px] py-0 h-5">Tools</Badge>
+        <span class="text-[9px] text-muted-foreground">+ MCP</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <Badge variant="default" class="text-[8px] py-0 h-5">Full</Badge>
+        <span class="text-[9px] text-muted-foreground">Both</span>
+      </div>
+    </div>
   </div>
 
 </div>
