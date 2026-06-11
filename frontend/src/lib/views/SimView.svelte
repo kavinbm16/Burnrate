@@ -355,11 +355,11 @@
             <!-- Turns preview -->
             <div>
               <p class="font-semibold text-foreground mb-2 uppercase tracking-wider text-[9px]">Sequence</p>
-              <div class="flex flex-col gap-2.5 max-h-40 overflow-y-auto pr-1">
+              <div class="flex flex-col gap-3 max-h-40 overflow-y-auto pr-1">
                 {#each selectedScenario.turns as turnPrompt, idx}
-                  <div class="px-2 py-2 rounded bg-card/30 border border-border/40 text-foreground truncate hover:bg-card/50 transition-colors">
+                  <div class="px-2 py-3 rounded bg-card/30 border border-border/40 text-foreground leading-snug hover:bg-card/50 transition-colors">
                     <span class="font-mono text-[9px] text-primary"># {idx + 1}</span>
-                    <span class="text-[10px] ml-1">{turnPrompt}</span>
+                    <span class="text-[10px] ml-1 break-words block">{turnPrompt}</span>
                   </div>
                 {/each}
               </div>
