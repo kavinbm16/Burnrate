@@ -354,10 +354,10 @@
 
             <!-- Turns preview -->
             <div>
-              <p class="font-semibold text-muted-foreground mb-2 uppercase tracking-wider text-[9px]">Sequence</p>
+              <p class="font-semibold text-foreground mb-2 uppercase tracking-wider text-[9px]">Sequence</p>
               <div class="flex flex-col gap-1 max-h-40 overflow-y-auto pr-1">
                 {#each selectedScenario.turns as turnPrompt, idx}
-                  <div class="px-2 py-1 rounded bg-card/30 border border-border/40 text-muted-foreground truncate hover:text-foreground hover:bg-card/50 transition-colors">
+                  <div class="px-2 py-1 rounded bg-card/30 border border-border/40 text-foreground truncate hover:bg-card/50 transition-colors">
                     <span class="font-mono text-[9px] text-primary"># {idx + 1}</span>
                     <span class="text-[10px] ml-1">{turnPrompt}</span>
                   </div>
@@ -382,19 +382,19 @@
         <Card.Content class="pt-3 space-y-2 text-xs">
           <div class="pb-2 border-b">
             <Badge variant="outline" class="text-[9px] mb-1">Baseline</Badge>
-            <p class="text-muted-foreground">Raw Gemini Live without optimization.</p>
+            <p class="text-foreground">Raw Gemini Live without optimization.</p>
           </div>
           <div class="pb-2 border-b">
             <Badge variant="outline" class="text-[9px] bg-cyan-500/5 border-cyan-500/20 text-cyan-400 mb-1">Headroom</Badge>
-            <p class="text-muted-foreground">Context compression to reduce input tokens.</p>
+            <p class="text-foreground">Context compression to reduce input tokens.</p>
           </div>
           <div class="pb-2 border-b">
             <Badge variant="outline" class="text-[9px] mb-1">Tools</Badge>
-            <p class="text-muted-foreground">MCP definitions increase input token count.</p>
+            <p class="text-foreground">MCP definitions increase input token count.</p>
           </div>
           <div>
             <Badge variant="default" class="text-[9px] mb-1">Full stack</Badge>
-            <p class="text-muted-foreground">Both tools + headroom compression together.</p>
+            <p class="text-foreground">Both tools + headroom compression together.</p>
           </div>
         </Card.Content>
       </Card.Root>
