@@ -88,8 +88,8 @@ class SimRunner:
                 if on_progress:
                     on_progress(i + 1, len(turns))
 
-        duration = len(turns) * avg_dur
-        await self._store.finalize_session(session_id, duration_seconds=float(duration), total_cost_usd=total_cost)
+        elapsed = gemini_session.elapsed_seconds()
+        await self._store.finalize_session(session_id, duration_seconds=float(elapsed), total_cost_usd=total_cost)
 
         return SimResult(
             session_id=session_id,
