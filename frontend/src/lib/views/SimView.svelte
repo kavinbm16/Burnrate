@@ -371,29 +371,29 @@
 
   </div>
 
-  <!-- BOTTOM: Horizontal Config Guide -->
-  <div class="flex items-center gap-3 px-4 py-3 rounded-lg border border-border/40 bg-card/30 console-panel">
+  <!-- FOOTER: Horizontal Config Guide -->
+  <div class="sticky bottom-0 left-0 right-0 flex items-center gap-4 px-6 py-3 border-t border-border/40 bg-background/95 backdrop-blur-sm">
     <div class="flex items-center gap-2 shrink-0">
-      <InfoIcon class="size-3.5 text-cyan-400" />
-      <span class="text-[9px] text-muted-foreground uppercase tracking-wide font-semibold">Configs</span>
+      <InfoIcon class="size-4 text-cyan-400" />
+      <span class="text-xs text-muted-foreground uppercase tracking-widest font-semibold">Benchmark Configs</span>
     </div>
-    <div class="h-4 w-px bg-border/40"></div>
-    <div class="flex flex-wrap gap-3">
+    <div class="h-5 w-px bg-border/40"></div>
+    <div class="flex flex-wrap gap-4">
       <div class="flex items-center gap-2">
-        <Badge variant="outline" class="text-[8px] py-0 h-5">Baseline</Badge>
-        <span class="text-[9px] text-muted-foreground">Raw API</span>
+        <Badge variant="outline" class="text-xs py-0.5 h-6 px-2">Baseline</Badge>
+        <span class="text-xs text-muted-foreground font-medium">Raw API</span>
       </div>
       <div class="flex items-center gap-2">
-        <Badge variant="outline" class="text-[8px] py-0 h-5 bg-cyan-500/5 border-cyan-500/20 text-cyan-400">Headroom</Badge>
-        <span class="text-[9px] text-muted-foreground">Context ↓</span>
+        <Badge variant="outline" class="text-xs py-0.5 h-6 px-2 bg-cyan-500/5 border-cyan-500/20 text-cyan-400">Headroom</Badge>
+        <span class="text-xs text-muted-foreground font-medium">Context compression</span>
       </div>
       <div class="flex items-center gap-2">
-        <Badge variant="outline" class="text-[8px] py-0 h-5">Tools</Badge>
-        <span class="text-[9px] text-muted-foreground">+ MCP</span>
+        <Badge variant="outline" class="text-xs py-0.5 h-6 px-2">Tools</Badge>
+        <span class="text-xs text-muted-foreground font-medium">MCP definitions</span>
       </div>
       <div class="flex items-center gap-2">
-        <Badge variant="default" class="text-[8px] py-0 h-5">Full</Badge>
-        <span class="text-[9px] text-muted-foreground">Both</span>
+        <Badge variant="default" class="text-xs py-0.5 h-6 px-2">Full stack</Badge>
+        <span class="text-xs text-muted-foreground font-medium">Both enabled</span>
       </div>
     </div>
   </div>
